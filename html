@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>もちもちライター</title>
+    <style>
+        :root {
+            --bg-gradient-1: #f8fafc;
+            --bg-gradient-2: #f1f5f9;
+            --glass-bg: rgba(255, 255, 255, 0.88);
+            --glass-border: rgba(226, 232, 240, 0.8);
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --accent-color: #6366f1;
+            --accent-light: rgba(99, 102, 241, 0.08);
+            --shadow-subtle: 0 4px 20px -2px rgba(148, 163, 184, 0.12);
+            --shadow-btn: 0 2px 10px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+            --shadow-btn-hover: 0 8px 20px rgba(99, 102, 241, 0.18);
+            --editor-font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+            --mascot-size: 130px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-gradient-1: #0f172a;
+                --bg-gradient-2: #1e293b;
+                --glass-bg: rgba(30, 41, 59, 0.88);
+                --glass-border: rgba(51, 65, 85, 0.8);
+                --text-primary: #f8fafc;
+                --text-secondary: #94a3b8;
+                --accent-color: #818cf8;
+                --accent-light: rgba(129, 140, 248, 0.12);
+                --shadow-subtle: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+                --shadow-btn: 0 2px 10px rgba(0, 0, 0, 0.2);
+                --shadow-btn-hover: 0 8px 20px rgba(129, 140, 248, 0.25);
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: linear-gradient(135deg, var(--bg-gradient-1), var(--bg-gradient-2));
+            font-family: var(--editor-font);
+            color: var(--text-primary);
+        }
+
+        #app-container {
+            display: flex;
+            flex-direction: column;
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 24px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 10;
+            flex-shrink: 0;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .char-counter {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            font-variant-numeric: tabular-nums;
+            background: var(--glass-border);
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            border: 1px solid var(--glass-border);
+        }
+
+        /* 画面上部に配置されたスマートで洗練された設定ボタン */
+        .settings-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            padding: 8px 18px;
+            border-radius: 30px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+            box-shadow: var(--shadow-btn);
+            outline: none;
+            user-select: none;
+        }
+
+        .settings-btn:hover {
+            transform: translateY(-1px);
+            color: var(--accent-color);
+            border-color: var(--accent-color);
+            box-shadow: var(--shadow-btn-hover);
+        }
+
+        .settings-btn:active {
+            transform: translateY(1px) scale(0.97);
+            background: var(--accent-light);
+        }
+
+        .settings-btn svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .settings-btn:hover svg {
+            transform: rotate(60deg);
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            position: relative;
+            overflow: hidden;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100%;
+            padding: 28px 32px;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-family: var(--editor-font);
+            font-size: 1.15rem;
+            line-height: 1.85;
+            color: var(--text-primary);
+            resize: none;
+            box-sizing: border-box;
+            word-break: break-word;
+        }
+
+        textarea::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.6;
+            font-weight: 400;
+        }
+
+        .mascot-container {
+            position: absolute;
+            width: var(--mascot-size);
+            height: var(--mascot-size);
+            top: 24px;
+            right: 24px;
+            cursor: grab;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            filter: drop-shadow(0 10px 18px rgba(0,0,0,0.1));
+            will-change: transform;
+            transform-origin: center bottom;
+        }
+
+        .mascot-container:active {
+            cursor: grabbing;
+        }
+
+        .mascot-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: none;
+            pointer-events: none;
+        }
+
+        .mascot-img.active {
+            display: block;
+        }
+
+        .mascot-fallback {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: var(--shadow-subtle);
+            pointer-events: none;
+        }
+
+        .mascot-fallback-face {
+            font-size: 3.2rem;
+            line-height: 1;
+        }
+
+        .mascot-fallback-hand {
+            font-size: 0.95rem;
+            margin-top: -2px;
+            font-weight: bold;
+            color: var(--text-secondary);
+        }
+
+        /* 固くなく、跳ね過ぎず、速過ぎない優しく自然なお餅の弾力（キー入力回数と正確に同期） */
+        .squish-anim {
+            animation: gentle-mochi 0.38s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        @keyframes gentle-mochi {
+            0% {
+                transform: scale(1, 1) translateY(0);
+            }
+            35% {
+                transform: scale(1.05, 0.95) translateY(3px);
+            }
+            70% {
+                transform: scale(0.99, 1.01) translateY(-1px);
+            }
+            100% {
+                transform: scale(1, 1) translateY(0);
+            }
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.45);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            width: 90%;
+            max-width: 420px;
+            max-height: 85vh;
+            border-radius: 24px;
+            padding: 26px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            overflow-y: auto;
+            transform: scale(0.94) translateY(8px);
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .modal-overlay.active .modal-card {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .close-btn {
+            background: var(--glass-border);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            transition: all 0.2s ease;
+        }
+
+        .close-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .setting-group {
+            margin-bottom: 18px;
+        }
+
+        .setting-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .setting-value-display {
+            font-weight: normal;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        .range-slider {
+            width: 100%;
+            accent-color: var(--accent-color);
+            cursor: pointer;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--glass-border);
+            border: 1px dashed var(--text-secondary);
+            padding: 10px 14px;
+            border-radius: 14px;
+            transition: border-color 0.2s ease;
+        }
+
+        .file-input-wrapper:hover {
+            border-color: var(--accent-color);
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-preview-thumb {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            object-fit: contain;
+            background: #fff;
+            border: 1px solid var(--glass-border);
+        }
+
+        .file-input-text {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .btn-action {
+            width: 100%;
+            padding: 12px;
+            border-radius: 14px;
+            border: none;
+            background: var(--accent-color);
+            color: #fff;
+            font-size: 0.92rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-btn);
+            margin-top: 8px;
+        }
+
+        .btn-action:hover {
+            opacity: 0.92;
+            transform: translateY(-1px);
+        }
+
+        .btn-action:active {
+            transform: translateY(1px);
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            margin-top: 8px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(15, 23, 42, 0.9);
+            color: #fff;
+            padding: 10px 22px;
+            border-radius: 30px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 200;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ワンタップ記号入力バー */
+        .symbol-bar {
+            display: flex;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            z-index: 5;
+            flex-shrink: 0;
+        }
+
+        .symbol-bar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .symbol-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+            box-shadow: var(--shadow-btn);
+            user-select: none;
+            flex-shrink: 0;
+        }
+
+        .symbol-btn:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+            background: var(--accent-light);
+        }
+
+        .symbol-btn:active {
+            transform: scale(0.93);
+        }
+
+        /* カラーカスタマイズスライダーのレイアウト */
+        .color-slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: var(--glass-border);
+            padding: 12px;
+            border-radius: 12px;
+            margin-top: 6px;
+        }
+
+        .color-slider-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .color-slider-row span:first-child {
+            width: 55px;
+            font-weight: 600;
+        }
+
+        .color-slider-row span:last-child {
+            width: 45px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .btn-sub-reset {
+            background: transparent;
+            border: none;
+            color: var(--accent-color);
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 6px;
+        }
+
+        .btn-sub-reset:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div id="app-container">
+        <header>
+            <div class="header-left">
+                <span class="char-counter" id="char-count">0 文字</span>
+            </div>
+            <!-- 設定ボタンはタイトルなしで画面上部に配置 -->
+            <button class="settings-btn" id="btn-open-settings" aria-label="設定">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+                <span>設定</span>
+            </button>
+        </header>
+
+        <div class="symbol-bar">
+            <button class="symbol-btn" onclick="insertSymbol('「', '」')">「」</button>
+            <button class="symbol-btn" onclick="insertSymbol('&quot;', '&quot;')">""</button>
+            <button class="symbol-btn" onclick="insertSymbol('・・・')">・・・</button>
+            <button class="symbol-btn" onclick="insertSymbol('＊＊＊')">＊＊＊</button>
+            <button class="symbol-btn" onclick="insertSymbol('……')">……</button>
+            <button class="symbol-btn" onclick="insertSymbol('(', ')')">()</button>
+            <button class="symbol-btn" onclick="insertSymbol('［', '］')">［］</button>
+            <button class="symbol-btn" onclick="insertSymbol('【', '】')">【】</button>
+            <button class="symbol-btn" onclick="insertSymbol('─')">─</button>
+        </div>
+
+        <main>
+            <!-- 画面上のテキスト入力エリア（文字コピー機能付きで完全ローカル動作） -->
+            <textarea id="editor" placeholder="ここに文字を入力してください...&#10;キー入力に連動してミニキャラが優しくもちもち弾みます！" autofocus></textarea>
+
+            <!-- ドラッグ＆ドロップ可能なキャラクターマスコット -->
+            <div class="mascot-container" id="mascot-container">
+                <img id="mascot-idle" class="mascot-img active" alt="待機中">
+                <img id="mascot-right" class="mascot-img" alt="右手打鍵">
+                <img id="mascot-left" class="mascot-img" alt="左手打鍵">
+
+                <div id="mascot-fallback" class="mascot-fallback" style="display: none;">
+                    <div class="mascot-fallback-face" id="fallback-face">🐰</div>
+                    <div class="mascot-fallback-hand" id="fallback-hand">♪</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 設定モーダル（画像設定・キャラクターサイズ調整・全文コピー・初期化） -->
+    <div class="modal-overlay" id="modal-settings">
+        <div class="modal-card">
+            <div class="modal-header">
+                <span class="modal-title">キャラクター & エディタ設定</span>
+                <button class="close-btn" id="btn-close-settings" aria-label="閉じる">✕</button>
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">
+                    <span>キャラクターサイズ</span>
+                    <span class="setting-value-display" id="size-value">130px</span>
+                </label>
+                <input type="range" id="input-mascot-size" class="range-slider" min="80" max="220" step="5" value="130">
+            </div>
+
+            <!-- 背景色カスタム (HSL) -->
+            <div class="setting-group">
+                <div class="setting-label">
+                    <span>背景色 (色相 / 彩度 / 明度)</span>
+                    <button class="btn-sub-reset" id="btn-reset-bg-color">デフォルト</button>
+                </div>
+                <div class="color-slider-group">
+                    <div class="color-slider-row">
+                        <span>色相 H</span>
+                        <input type="range" id="bg-h" class="range-slider" min="0" max="360" value="210">
+                        <span id="bg-h-val">210°</span>
+                    </div>
+                    <div class="color-slider-row">
+                        <span>彩度 S</span>
+                        <input type="range" id="bg-s" class="range-slider" min="0" max="100" value="40">
+                        <span id="bg-s-val">40%</span>
+                    </div>
+                    <div class="color-slider-row">
+                        <span>明度 L</span>
+                        <input type="range" id="bg-l" class="range-slider" min="0" max="100" value="98">
+                        <span id="bg-l-val">98%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- テキスト色カスタム (HSL) -->
+            <div class="setting-group">
+                <div class="setting-label">
+                    <span>テキスト色 (色相 / 彩度 / 明度)</span>
+                    <button class="btn-sub-reset" id="btn-reset-text-color">デフォルト</button>
+                </div>
+                <div class="color-slider-group">
+                    <div class="color-slider-row">
+                        <span>色相 H</span>
+                        <input type="range" id="text-h" class="range-slider" min="0" max="360" value="215">
+                        <span id="text-h-val">215°</span>
+                    </div>
+                    <div class="color-slider-row">
+                        <span>彩度 S</span>
+                        <input type="range" id="text-s" class="range-slider" min="0" max="100" value="28">
+                        <span id="text-s-val">28%</span>
+                    </div>
+                    <div class="color-slider-row">
+                        <span>明度 L</span>
+                        <input type="range" id="text-l" class="range-slider" min="0" max="100" value="17">
+                        <span id="text-l-val">17%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">待機中の画像</label>
+                <div class="file-input-wrapper">
+                    <img id="prev-idle" class="file-preview-thumb" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><rect width='40' height='40' fill='%23f1f5f9'/></svg>">
+                    <span class="file-input-text" id="name-idle">画像を選択...</span>
+                    <input type="file" id="input-idle" accept="image/*">
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">右手で叩く画像</label>
+                <div class="file-input-wrapper">
+                    <img id="prev-right" class="file-preview-thumb" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><rect width='40' height='40' fill='%23f1f5f9'/></svg>">
+                    <span class="file-input-text" id="name-right">画像を選択...</span>
+                    <input type="file" id="input-right" accept="image/*">
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">左手で叩く画像</label>
+                <div class="file-input-wrapper">
+                    <img id="prev-left" class="file-preview-thumb" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><rect width='40' height='40' fill='%23f1f5f9'/></svg>">
+                    <span class="file-input-text" id="name-left">画像を選択...</span>
+                    <input type="file" id="input-left" accept="image/*">
+                </div>
+            </div>
+
+            <button class="btn-action" id="btn-copy-text">📋 全文コピー</button>
+            <button class="btn-action btn-danger" id="btn-reset-images">画像を初期化</button>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">コピーしました！</div>
+
+    <script>
+        const KEYS = {
+            TEXT: 'mochi_editor_text',
+            POS_IDLE: 'mochi_img_idle',
+            POS_RIGHT: 'mochi_img_right',
+            POS_LEFT: 'mochi_img_left',
+            POSITION: 'mochi_mascot_pos',
+            SIZE: 'mochi_mascot_size',
+            COLOR_BG: 'mochi_color_bg',
+            COLOR_TEXT: 'mochi_color_text'
+        };
+
+        const DEFAULT_COLORS = {
+            bg: { h: 210, s: 40, l: 98 },
+            text: { h: 215, s: 28, l: 17 }
+        };
+
+        const IDLE_TIMEOUT_MS = 450;
+        const MAX_IMAGE_DIM = 240;
+
+        const IGNORED_KEYS = new Set([
+            'Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Escape',
+            'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+            'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
+            'Fn', 'ContextMenu'
+        ]);
+
+        /* file:/// スキームやローカルファイル環境・ストレージ制限対策のためのメモリフォールバック */
+        const memoryStorage = {};
+
+        function safeStorageGet(key, defaultValue = null) {
+            try {
+                if (typeof window !== 'undefined' && window.localStorage) {
+                    const val = window.localStorage.getItem(key);
+                    if (val !== null) return val;
+                }
+            } catch (e) {}
+            return memoryStorage[key] !== undefined ? memoryStorage[key] : defaultValue;
+        }
+
+        function safeStorageSet(key, value) {
+            try {
+                if (typeof window !== 'undefined' && window.localStorage) {
+                    window.localStorage.setItem(key, value);
+                }
+            } catch (e) {}
+            memoryStorage[key] = value;
+            return true;
+        }
+
+        function safeStorageRemove(key) {
+            try {
+                if (typeof window !== 'undefined' && window.localStorage) {
+                    window.localStorage.removeItem(key);
+                }
+            } catch (e) {}
+            delete memoryStorage[key];
+        }
+
+        const mascotState = {
+            images: { idle: null, right: null, left: null },
+            currentHand: 'right',
+            idleTimer: null,
+            isDragging: false,
+            dragOffset: { x: 0, y: 0 },
+            position: { x: 24, y: 24 }
+        };
+
+        const editor = document.getElementById('editor');
+        const charCount = document.getElementById('char-count');
+        const mascotContainer = document.getElementById('mascot-container');
+        const imgIdle = document.getElementById('mascot-idle');
+        const imgRight = document.getElementById('mascot-right');
+        const imgLeft = document.getElementById('mascot-left');
+        const mascotFallback = document.getElementById('mascot-fallback');
+        const fallbackFace = document.getElementById('fallback-face');
+        const fallbackHand = document.getElementById('fallback-hand');
+
+        const modalSettings = document.getElementById('modal-settings');
+        const btnOpenSettings = document.getElementById('btn-open-settings');
+        const btnCloseSettings = document.getElementById('btn-close-settings');
+        const btnCopyText = document.getElementById('btn-copy-text');
+        const btnResetImages = document.getElementById('btn-reset-images');
+        const inputMascotSize = document.getElementById('input-mascot-size');
+        const sizeValue = document.getElementById('size-value');
+        const toast = document.getElementById('toast');
+
+        function initEditor() {
+            const savedText = safeStorageGet(KEYS.TEXT, '');
+            editor.value = savedText;
+            updateCharCount();
+
+            editor.addEventListener('input', () => {
+                safeStorageSet(KEYS.TEXT, editor.value);
+                updateCharCount();
+            });
+
+            // キー入力に正確に連動して左右ハンドを切り替え、打鍵回数と完全に同期
+            editor.addEventListener('keydown', (e) => {
+                if (IGNORED_KEYS.has(e.key)) return;
+                triggerMascotAnimation();
+            });
+        }
+
+        function updateCharCount() {
+            const count = editor.value.length;
+            charCount.textContent = `${count.toLocaleString()} 文字`;
+        }
+
+        function setMascotPose(pose) {
+            const hasCustomImages = mascotState.images.idle || mascotState.images.right || mascotState.images.left;
+
+            if (hasCustomImages) {
+                mascotFallback.style.display = 'none';
+                imgIdle.classList.toggle('active', pose === 'idle');
+                imgRight.classList.toggle('active', pose === 'right');
+                imgLeft.classList.toggle('active', pose === 'left');
+            } else {
+                imgIdle.classList.remove('active');
+                imgRight.classList.remove('active');
+                imgLeft.classList.remove('active');
+                mascotFallback.style.display = 'flex';
+
+                if (pose === 'idle') {
+                    fallbackFace.textContent = '🐰';
+                    fallbackHand.textContent = '♪';
+                } else if (pose === 'right') {
+                    fallbackFace.textContent = '🪘';
+                    fallbackHand.textContent = '👉';
+                } else if (pose === 'left') {
+                    fallbackFace.textContent = '🥁';
+                    fallbackHand.textContent = '👈';
+                }
+            }
+        }
+
+        function triggerMascotAnimation() {
+            // キー打鍵毎に左右の手を交互に切り替え
+            mascotState.currentHand = (mascotState.currentHand === 'right') ? 'left' : 'right';
+            setMascotPose(mascotState.currentHand);
+
+            // あまり跳ね過ぎず、固く見えない速過ぎないもちもち弾力
+            mascotContainer.classList.remove('squish-anim');
+            void mascotContainer.offsetWidth; 
+            mascotContainer.classList.add('squish-anim');
+
+            clearTimeout(mascotState.idleTimer);
+            mascotState.idleTimer = setTimeout(() => {
+                setMascotPose('idle');
+            }, IDLE_TIMEOUT_MS);
+        }
+
+        function initDraggableMascot() {
+            const savedPos = safeStorageGet(KEYS.POSITION);
+            if (savedPos) {
+                try {
+                    mascotState.position = JSON.parse(savedPos);
+                } catch (e) {}
+            }
+            applyMascotPosition();
+
+            mascotContainer.addEventListener('pointerdown', (e) => {
+                mascotState.isDragging = true;
+                try { mascotContainer.setPointerCapture(e.pointerId); } catch (err) {}
+                mascotState.dragOffset = {
+                    x: e.clientX - mascotState.position.x,
+                    y: e.clientY - mascotState.position.y
+                };
+                e.preventDefault();
+            });
+
+            mascotContainer.addEventListener('pointermove', (e) => {
+                if (!mascotState.isDragging) return;
+
+                let newX = e.clientX - mascotState.dragOffset.x;
+                let newY = e.clientY - mascotState.dragOffset.y;
+
+                const maxX = Math.max(10, window.innerWidth - mascotContainer.offsetWidth);
+                const maxY = Math.max(10, window.innerHeight - mascotContainer.offsetHeight);
+
+                newX = Math.max(0, Math.min(newX, maxX));
+                newY = Math.max(0, Math.min(newY, maxY));
+
+                mascotState.position = { x: newX, y: newY };
+                applyMascotPosition();
+            });
+
+            const stopDrag = (e) => {
+                if (mascotState.isDragging) {
+                    mascotState.isDragging = false;
+                    try { mascotContainer.releasePointerCapture(e.pointerId); } catch (err) {}
+                    safeStorageSet(KEYS.POSITION, JSON.stringify(mascotState.position));
+                }
+            };
+
+            mascotContainer.addEventListener('pointerup', stopDrag);
+            mascotContainer.addEventListener('pointercancel', stopDrag);
+        }
+
+        function applyMascotPosition() {
+            mascotContainer.style.left = `${mascotState.position.x}px`;
+            mascotContainer.style.top = `${mascotState.position.y}px`;
+            mascotContainer.style.right = 'auto';
+        }
+
+        function initSizeSettings() {
+            const savedSize = safeStorageGet(KEYS.SIZE, '130');
+            inputMascotSize.value = savedSize;
+            updateMascotSize(savedSize, false);
+
+            inputMascotSize.addEventListener('input', (e) => {
+                updateMascotSize(e.target.value, true);
+            });
+        }
+
+        function updateMascotSize(sizeVal, save = true) {
+            document.documentElement.style.setProperty('--mascot-size', `${sizeVal}px`);
+            sizeValue.textContent = `${sizeVal}px`;
+            if (save) {
+                safeStorageSet(KEYS.SIZE, sizeVal);
+            }
+        }
+
+        function initImageSettings() {
+            loadSavedImages();
+
+            setupFileInput('input-idle', 'prev-idle', 'name-idle', KEYS.POS_IDLE, 'idle');
+            setupFileInput('input-right', 'prev-right', 'name-right', KEYS.POS_RIGHT, 'right');
+            setupFileInput('input-left', 'prev-left', 'name-left', KEYS.POS_LEFT, 'left');
+
+            btnResetImages.addEventListener('click', () => {
+                safeStorageRemove(KEYS.POS_IDLE);
+                safeStorageRemove(KEYS.POS_RIGHT);
+                safeStorageRemove(KEYS.POS_LEFT);
+                mascotState.images = { idle: null, right: null, left: null };
+                imgIdle.src = '';
+                imgRight.src = '';
+                imgLeft.src = '';
+                document.getElementById('prev-idle').src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="%23f1f5f9"/></svg>';
+                document.getElementById('prev-right').src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="%23f1f5f9"/></svg>';
+                document.getElementById('prev-left').src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="%23f1f5f9"/></svg>';
+                document.getElementById('name-idle').textContent = '画像を選択...';
+                document.getElementById('name-right').textContent = '画像を選択...';
+                document.getElementById('name-left').textContent = '画像を選択...';
+                loadSavedImages();
+                showToast('画像を初期化しました');
+            });
+        }
+
+        function loadSavedImages() {
+            const idleData = safeStorageGet(KEYS.POS_IDLE);
+            const rightData = safeStorageGet(KEYS.POS_RIGHT);
+            const leftData = safeStorageGet(KEYS.POS_LEFT);
+
+            mascotState.images.idle = idleData;
+            mascotState.images.right = rightData;
+            mascotState.images.left = leftData;
+
+            if (idleData) {
+                imgIdle.src = idleData;
+                document.getElementById('prev-idle').src = idleData;
+                document.getElementById('name-idle').textContent = '設定済み';
+            }
+            if (rightData) {
+                imgRight.src = rightData;
+                document.getElementById('prev-right').src = rightData;
+                document.getElementById('name-right').textContent = '設定済み';
+            }
+            if (leftData) {
+                imgLeft.src = leftData;
+                document.getElementById('prev-left').src = leftData;
+                document.getElementById('name-left').textContent = '設定済み';
+            }
+
+            setMascotPose('idle');
+        }
+
+        function setupFileInput(inputId, prevId, nameId, storageKey, poseKey) {
+            const inputEl = document.getElementById(inputId);
+            const prevEl = document.getElementById(prevId);
+            const nameEl = document.getElementById(nameId);
+
+            inputEl.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                nameEl.textContent = file.name;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    compressImage(event.target.result, MAX_IMAGE_DIM, (compressedData) => {
+                        prevEl.src = compressedData;
+                        safeStorageSet(storageKey, compressedData);
+                        mascotState.images[poseKey] = compressedData;
+
+                        if (poseKey === 'idle') imgIdle.src = compressedData;
+                        if (poseKey === 'right') imgRight.src = compressedData;
+                        if (poseKey === 'left') imgLeft.src = compressedData;
+
+                        setMascotPose('idle');
+                        showToast('画像を保存しました！');
+                    });
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function compressImage(dataUrl, maxDim, callback) {
+            const img = new Image();
+            img.onload = () => {
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > maxDim) {
+                        height = Math.round((height * maxDim) / width);
+                        width = maxDim;
+                    }
+                } else {
+                    if (height > maxDim) {
+                        width = Math.round((width * maxDim) / height);
+                        height = maxDim;
+                    }
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                try {
+                    callback(canvas.toDataURL('image/png', 0.85));
+                } catch (e) {
+                    callback(dataUrl);
+                }
+            };
+            img.src = dataUrl;
+        }
+
+        function initUI() {
+            btnOpenSettings.addEventListener('click', () => {
+                modalSettings.classList.add('active');
+            });
+
+            btnCloseSettings.addEventListener('click', () => {
+                modalSettings.classList.remove('active');
+            });
+
+            modalSettings.addEventListener('click', (e) => {
+                if (e.target === modalSettings) {
+                    modalSettings.classList.remove('active');
+                }
+            });
+
+            btnCopyText.addEventListener('click', () => {
+                const text = editor.value;
+                if (!text) {
+                    showToast('コピーする文章がありません');
+                    return;
+                }
+
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        showToast('全文コピーしました！');
+                    }).catch(() => {
+                        fallbackCopyText(text);
+                    });
+                } else {
+                    fallbackCopyText(text);
+                }
+            });
+        }
+
+        function fallbackCopyText(text) {
+            editor.focus();
+            editor.select();
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showToast('全文コピーしました！');
+                } else {
+                    showToast('テキストを選択してコピーしてください');
+                }
+            } catch (err) {
+                showToast('全選択しました。コピーしてください');
+            }
+        }
+
+        function showToast(message) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        function insertSymbol(openSymbol, closeSymbol = '') {
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            const text = editor.value;
+            const selectedText = text.substring(start, end);
+
+            let inserted = '';
+            let newCursorPos = start;
+
+            if (closeSymbol) {
+                // 括弧ペア等の場合：テキスト選択があれば挟み込み、無ければカーソルを間に配置
+                inserted = openSymbol + selectedText + closeSymbol;
+                editor.value = text.substring(0, start) + inserted + text.substring(end);
+                newCursorPos = selectedText.length > 0 ? start + inserted.length : start + openSymbol.length;
+            } else {
+                // 単一記号などの場合
+                inserted = openSymbol;
+                editor.value = text.substring(0, start) + inserted + text.substring(end);
+                newCursorPos = start + inserted.length;
+            }
+
+            safeStorageSet(KEYS.TEXT, editor.value);
+            updateCharCount();
+
+            editor.focus();
+            editor.setSelectionRange(newCursorPos, newCursorPos);
+
+            // 記号入力時もマスコットをぽよぽよ動かす
+            triggerMascotAnimation();
+        }
+
+        function initColorSettings() {
+            const savedBg = safeStorageGet(KEYS.COLOR_BG);
+            const savedText = safeStorageGet(KEYS.COLOR_TEXT);
+
+            const bg = savedBg ? JSON.parse(savedBg) : { ...DEFAULT_COLORS.bg };
+            const text = savedText ? JSON.parse(savedText) : { ...DEFAULT_COLORS.text };
+
+            // スライダー要素の参照
+            const bgH = document.getElementById('bg-h');
+            const bgS = document.getElementById('bg-s');
+            const bgL = document.getElementById('bg-l');
+
+            const textH = document.getElementById('text-h');
+            const textS = document.getElementById('text-s');
+            const textL = document.getElementById('text-l');
+
+            // 初期値を反映
+            bgH.value = bg.h; bgS.value = bg.s; bgL.value = bg.l;
+            textH.value = text.h; textS.value = text.s; textL.value = text.l;
+
+            applyColors(bg, text);
+
+            function updateFromSliders() {
+                const currentBg = { h: parseInt(bgH.value), s: parseInt(bgS.value), l: parseInt(bgL.value) };
+                const currentText = { h: parseInt(textH.value), s: parseInt(textS.value), l: parseInt(textL.value) };
+
+                applyColors(currentBg, currentText);
+
+                safeStorageSet(KEYS.COLOR_BG, JSON.stringify(currentBg));
+                safeStorageSet(KEYS.COLOR_TEXT, JSON.stringify(currentText));
+            }
+
+            [bgH, bgS, bgL, textH, textS, textL].forEach(slider => {
+                slider.addEventListener('input', updateFromSliders);
+            });
+
+            document.getElementById('btn-reset-bg-color').addEventListener('click', () => {
+                bgH.value = DEFAULT_COLORS.bg.h;
+                bgS.value = DEFAULT_COLORS.bg.s;
+                bgL.value = DEFAULT_COLORS.bg.l;
+                updateFromSliders();
+            });
+
+            document.getElementById('btn-reset-text-color').addEventListener('click', () => {
+                textH.value = DEFAULT_COLORS.text.h;
+                textS.value = DEFAULT_COLORS.text.s;
+                textL.value = DEFAULT_COLORS.text.l;
+                updateFromSliders();
+            });
+        }
+
+        function applyColors(bg, text) {
+            document.getElementById('bg-h-val').textContent = `${bg.h}°`;
+            document.getElementById('bg-s-val').textContent = `${bg.s}%`;
+            document.getElementById('bg-l-val').textContent = `${bg.l}%`;
+
+            document.getElementById('text-h-val').textContent = `${text.h}°`;
+            document.getElementById('text-s-val').textContent = `${text.s}%`;
+            document.getElementById('text-l-val').textContent = `${text.l}%`;
+
+            const root = document.documentElement;
+            // グラデーション背景を動的に作成
+            const bg1 = `hsl(${bg.h}, ${bg.s}%, ${bg.l}%)`;
+            const bg2 = `hsl(${(bg.h + 15) % 360}, ${bg.s}%, ${Math.max(0, bg.l - 4)}%)`;
+            const textPrimary = `hsl(${text.h}, ${text.s}%, ${text.l}%)`;
+            const textSecondary = `hsl(${text.h}, ${Math.max(0, text.s - 10)}%, ${Math.min(100, text.l + 25)}%)`;
+
+            root.style.setProperty('--bg-gradient-1', bg1);
+            root.style.setProperty('--bg-gradient-2', bg2);
+            root.style.setProperty('--text-primary', textPrimary);
+            root.style.setProperty('--text-secondary', textSecondary);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initEditor();
+            initDraggableMascot();
+            initSizeSettings();
+            initImageSettings();
+            initColorSettings();
+            initUI();
+        });
+    </script>
+</body>
+</html>
