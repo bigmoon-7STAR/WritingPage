@@ -84,6 +84,13 @@
             border-bottom: 1px solid var(--top-border);
             z-index: 10;
             flex-shrink: 0;
+            gap: 8px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .char-counter {
@@ -96,17 +103,18 @@
             font-weight: 600;
             letter-spacing: 0.03em;
             border: 1px solid var(--top-border);
+            white-space: nowrap;
         }
 
         .settings-btn {
             background: var(--top-btn-bg);
             border: 1px solid var(--top-border);
             color: var(--top-text-primary);
-            padding: 8px 16px;
+            padding: 8px 14px;
             border-radius: 30px;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             font-size: 0.85rem;
             font-weight: 600;
             cursor: pointer;
@@ -114,6 +122,7 @@
             box-shadow: var(--shadow-btn);
             outline: none;
             user-select: none;
+            white-space: nowrap;
         }
 
         .settings-btn:hover {
@@ -122,15 +131,62 @@
             transform: translateY(-1px);
         }
 
+        /* トグル中（読み上げ中・チェック有効中）のボタン */
+        .settings-btn.active {
+            background: var(--top-btn-hover);
+            color: var(--top-btn-hover-text);
+        }
+
         .settings-btn svg {
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             stroke: currentColor;
             transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-        .settings-btn:hover svg {
+        /* 歯車アイコンだけ、ホバー時に回転 */
+        #btn-open-settings:hover svg {
             transform: rotate(60deg);
+        }
+
+        /* 文字なしのアイコンボタン */
+        .icon-btn {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            justify-content: center;
+        }
+
+        /* 読み上げ：通常は再生アイコン、読み上げ中は停止アイコン */
+        #btn-tts .ico-stop { display: none; }
+        #btn-tts.active .ico-play { display: none; }
+        #btn-tts.active .ico-stop { display: block; }
+
+        .btn-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            min-width: 18px;
+            padding: 1px 5px;
+            border-radius: 10px;
+            background: #ef4444;
+            color: #ffffff;
+            font-size: 0.68rem;
+            line-height: 1.3;
+            font-variant-numeric: tabular-nums;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .btn-badge:empty {
+            display: none;
+        }
+
+        @media (max-width: 520px) {
+            header { padding: 10px 12px; }
+            .icon-btn { width: 38px; height: 38px; }
+            .char-counter { padding: 6px 10px; }
         }
 
         /* 彩度0の記号ショートカットバー */
@@ -179,35 +235,98 @@
 
         main {
             flex: 1;
+            min-height: 0;
             display: flex;
             position: relative;
             overflow: hidden;
             justify-content: center;
         }
 
-        textarea {
+        /* ===== エディタ本体（テキストエリア＋ハイライト用の背面レイヤー） ===== */
+        .editor-wrap {
+            position: relative;
             width: 100%;
             max-width: var(--editor-width);
-            margin: 0 auto;
-            display: block;
             height: 100%;
+            margin: 0 auto;
+        }
+
+        /* テキストエリアと背面レイヤーで、文字の折り返しが完全に一致するよう同じ設定を共有 */
+        .editor-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            margin: 0;
             padding: 28px 32px;
             border: none;
             outline: none;
-            background: transparent;
             font-family: var(--editor-font);
             font-size: var(--editor-font-size);
             line-height: var(--editor-line-height);
+            letter-spacing: normal;
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            box-sizing: border-box;
+        }
+
+        textarea.editor-layer {
+            display: block;
+            z-index: 2;
+            background: transparent;
             color: var(--text-primary);
             resize: none;
-            box-sizing: border-box;
-            word-break: break-word;
+            -webkit-text-size-adjust: 100%;
         }
 
         textarea::placeholder {
             color: var(--text-secondary);
             opacity: 0.5;
             font-weight: 400;
+        }
+
+        .editor-backdrop,
+        .editor-measure {
+            color: transparent;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .editor-measure {
+            visibility: hidden;
+        }
+
+        /* ハイライト表示中は、背面レイヤーと折り返し幅を揃えるためスクロールバーを隠す */
+        .editor-wrap.hl-on textarea.editor-layer {
+            scrollbar-width: none;
+        }
+        .editor-wrap.hl-on textarea.editor-layer::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* ハイライトの見た目（透過色なのでライト/ダークどちらでも使える） */
+        .hl-dup {
+            background: rgba(250, 204, 21, 0.38);
+            border-radius: 3px;
+        }
+
+        .hl-proof {
+            background: rgba(248, 113, 113, 0.2);
+            border-radius: 3px;
+            text-decoration: underline wavy #ef4444;
+            text-decoration-skip-ink: none;
+            text-underline-offset: 4px;
+        }
+
+        .hl-both {
+            background: rgba(250, 204, 21, 0.38);
+            border-radius: 3px;
+            text-decoration: underline wavy #ef4444;
+            text-decoration-skip-ink: none;
+            text-underline-offset: 4px;
         }
 
         /* ドラッグ対応マスコットコンテナ */
@@ -250,28 +369,33 @@
             width: 100%;
             height: 100%;
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            border-radius: 50%;
-            backdrop-filter: blur(12px);
-            box-shadow: var(--shadow-subtle);
             pointer-events: none;
         }
 
-        .mascot-fallback-face {
-            font-size: 3.2rem;
-            line-height: 1;
+        .mascot-fallback svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
         }
 
-        .mascot-fallback-hand {
-            font-size: 0.95rem;
-            margin-top: -2px;
-            font-weight: bold;
-            color: var(--text-secondary);
+        /* 代替キャラ「おもち」：線画のミニキャラ。ポーズは data-pose で切り替え */
+        .mc-body, .mc-hand ellipse {
+            fill: #ffffff;
+            stroke: var(--text-primary);
+            stroke-width: 3;
+            stroke-linejoin: round;
         }
+        .mc-key   { fill: var(--text-primary); opacity: 0.18; }
+        .mc-shine { fill: none; stroke: var(--text-primary); stroke-width: 3; stroke-linecap: round; opacity: 0.14; }
+        .mc-eye   { fill: var(--text-primary); transform-box: fill-box; transform-origin: center; transition: transform 0.1s ease-out; }
+        .mc-blush { fill: #f9a8d4; opacity: 0.55; }
+        .mc-mouth { fill: none; stroke: var(--text-primary); stroke-width: 2.6; stroke-linecap: round; }
+        .mc-hand  { transition: transform 0.1s ease-out; }
+
+        .mascot-fallback[data-pose="right"] .mc-hand-r { transform: translateY(6px); }
+        .mascot-fallback[data-pose="left"]  .mc-hand-l { transform: translateY(6px); }
+        .mascot-fallback[data-pose="right"] .mc-eye,
+        .mascot-fallback[data-pose="left"]  .mc-eye { transform: scaleY(0.3); }
 
         /* もちもち・弾力キーボードアニメーション */
         .squish-anim {
@@ -283,6 +407,142 @@
             35%  { transform: scale(1.06, 0.94) translateY(3px); }
             70%  { transform: scale(0.98, 1.02) translateY(-1px); }
             100% { transform: scale(1, 1) translateY(0); }
+        }
+
+        /* ===== チェック結果パネル ===== */
+        .check-panel {
+            display: none;
+            flex-direction: column;
+            flex-shrink: 0;
+            max-height: 34vh;
+            background: var(--top-bg);
+            backdrop-filter: blur(20px) saturate(0%);
+            -webkit-backdrop-filter: blur(20px) saturate(0%);
+            border-top: 1px solid var(--top-border);
+            color: var(--top-text-primary);
+            z-index: 8;
+        }
+
+        .check-panel.open {
+            display: flex;
+        }
+
+        .check-head {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            padding: 10px 16px 6px;
+            font-size: 0.82rem;
+        }
+
+        .check-title {
+            font-weight: 700;
+            margin-right: auto;
+        }
+
+        .check-opt {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            user-select: none;
+            color: var(--top-text-secondary);
+        }
+
+        .check-opt input {
+            accent-color: var(--top-text-primary);
+            cursor: pointer;
+        }
+
+        .check-list {
+            overflow-y: auto;
+            padding: 4px 12px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .check-empty {
+            padding: 10px 6px;
+            font-size: 0.85rem;
+            color: var(--top-text-secondary);
+        }
+
+        .issue-row {
+            display: flex;
+            align-items: stretch;
+            gap: 6px;
+        }
+
+        .issue-item {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-align: left;
+            background: var(--top-btn-bg);
+            border: 1px solid var(--top-border);
+            color: var(--top-text-primary);
+            border-radius: 12px;
+            padding: 8px 12px;
+            font-size: 0.84rem;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .issue-item:hover {
+            background: var(--top-btn-hover);
+            color: var(--top-btn-hover-text);
+        }
+
+        .issue-tag {
+            flex-shrink: 0;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 10px;
+            color: #121212;
+        }
+
+        .issue-tag.dup { background: rgba(250, 204, 21, 0.85); }
+        .issue-tag.proof { background: rgba(248, 113, 113, 0.85); }
+
+        .issue-title {
+            font-weight: 700;
+            flex-shrink: 0;
+            max-width: 40%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .issue-detail {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            opacity: 0.75;
+        }
+
+        .issue-ignore {
+            flex-shrink: 0;
+            background: transparent;
+            border: 1px solid var(--top-border);
+            color: var(--top-text-secondary);
+            border-radius: 12px;
+            padding: 0 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .issue-ignore:hover {
+            background: var(--top-btn-bg);
+            color: var(--top-text-primary);
         }
 
         .modal-overlay {
@@ -423,8 +683,10 @@
             cursor: pointer;
         }
 
-        select#editor-font {
+        select#editor-font,
+        select#tts-voice {
             flex: 1;
+            min-width: 0;
             padding: 6px;
             border-radius: 8px;
             border: 1px solid rgba(150, 150, 150, 0.3);
@@ -437,7 +699,8 @@
             cursor: pointer;
         }
         @media (prefers-color-scheme: dark) {
-            select#editor-font {
+            select#editor-font,
+            select#tts-voice {
                 background: rgba(0, 0, 0, 0.3);
                 border: 1px solid rgba(255, 255, 255, 0.2);
             }
@@ -457,6 +720,12 @@
 
         .btn-sub-reset:hover {
             background: rgba(150, 150, 150, 0.2);
+        }
+
+        .setting-note {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
         }
 
         /* 画像選択UI */
@@ -519,6 +788,202 @@
         }
 
         .toast.show { transform: translateX(-50%) translateY(0); }
+    
+        /* ===== デザイン刷新（既存スタイルの上書き） ===== */
+        .char-counter {
+            background: none;
+            border: none;
+            padding: 0;
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border-color: transparent;
+            box-shadow: none;
+        }
+        .icon-btn:hover {
+            background: var(--top-btn-bg);
+            color: var(--top-text-primary);
+            border-color: var(--top-border);
+            transform: none;
+        }
+        .icon-btn.active,
+        .icon-btn.active:hover {
+            background: var(--top-btn-hover);
+            color: var(--top-btn-hover-text);
+            border-color: transparent;
+        }
+
+        .symbol-bar { gap: 6px; padding: 7px 16px; }
+        .symbol-btn {
+            background: transparent;
+            border-radius: 8px;
+            padding: 5px 12px;
+            font-size: 0.86rem;
+            font-weight: 500;
+            box-shadow: none;
+        }
+        .symbol-btn:hover {
+            background: var(--top-btn-hover);
+            color: var(--top-btn-hover-text);
+        }
+
+        .modal-card { border-radius: 20px; }
+        .setting-group { margin-bottom: 24px; }
+        .setting-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            opacity: 0.85;
+        }
+        .color-slider-group {
+            background: transparent;
+            border: none;
+            border-top: 1px solid rgba(150, 150, 150, 0.28);
+            border-radius: 0;
+            padding: 14px 0 0;
+        }
+
+        .range-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 18px;
+            background: transparent;
+        }
+        .range-slider::-webkit-slider-runnable-track {
+            height: 3px;
+            border-radius: 2px;
+            background: rgba(150, 150, 150, 0.35);
+        }
+        .range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            box-sizing: border-box;
+            width: 16px;
+            height: 16px;
+            margin-top: -6.5px;
+            border-radius: 50%;
+            background: var(--text-primary);
+            border: 2px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+        }
+        .range-slider::-moz-range-track {
+            height: 3px;
+            border-radius: 2px;
+            background: rgba(150, 150, 150, 0.35);
+        }
+        .range-slider::-moz-range-thumb {
+            box-sizing: border-box;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--text-primary);
+            border: 2px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+        }
+
+        .btn-action {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--text-primary);
+            border-radius: 12px;
+            box-shadow: none;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+        }
+        .btn-action:hover {
+            background: var(--text-primary);
+            color: var(--bg-gradient-1);
+            opacity: 1;
+        }
+        .btn-action.btn-danger {
+            background: transparent;
+            color: #ef4444;
+            border-color: #ef4444;
+        }
+        .btn-action.btn-danger:hover {
+            background: #ef4444;
+            color: #ffffff;
+        }
+
+        /* チェック結果：塗りつぶしのタグをやめ、色ドットで種別を示す */
+        .issue-tag,
+        .issue-tag.dup,
+        .issue-tag.proof {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0;
+            background: none;
+            color: inherit;
+            font-weight: 600;
+            opacity: 0.8;
+        }
+        .issue-tag::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+        .issue-tag.dup::before   { background: #facc15; }
+        .issue-tag.proof::before { background: #f87171; }
+        .issue-item { border-radius: 10px; }
+
+        .color-slider-row span:first-child { flex-shrink: 0; white-space: nowrap; }
+
+        button:focus-visible,
+        .settings-btn:focus-visible {
+            outline: 2px solid var(--top-text-primary);
+            outline-offset: 2px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* ===== 設定パネルのタブ ===== */
+        .modal-card { overflow: hidden; }
+        .modal-header { margin-bottom: 14px; }
+        .tab-bar {
+            display: flex;
+            flex-shrink: 0;
+            border-bottom: 1px solid rgba(150, 150, 150, 0.28);
+        }
+        .tab-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            padding: 10px 4px;
+            font: inherit;
+            font-size: 0.82rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            color: var(--text-primary);
+            opacity: 0.5;
+            cursor: pointer;
+            transition: opacity 0.2s ease, border-color 0.2s ease;
+        }
+        .tab-btn:hover { opacity: 0.8; }
+        .tab-btn[aria-selected="true"] {
+            opacity: 1;
+            border-bottom-color: var(--text-primary);
+        }
+        .modal-body {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            margin: 0 -24px -24px;
+            padding: 20px 24px 24px;
+        }
+        .tab-panel[hidden] { display: none; }
     </style>
 </head>
 <body>
@@ -528,13 +993,39 @@
             <div class="header-left">
                 <span class="char-counter" id="char-count">0 文字</span>
             </div>
-            <button class="settings-btn" id="btn-open-settings" aria-label="設定">
-                <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                </svg>
-                <span>設定</span>
-            </button>
+            <div class="header-actions">
+                <button class="settings-btn icon-btn" id="btn-copy-text" aria-label="全文をコピー" title="全文をコピー">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="9" y="9" width="11" height="11" rx="2.5"></rect>
+                        <path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15"></path>
+                    </svg>
+                </button>
+                <button class="settings-btn icon-btn" id="btn-tts" aria-label="読み上げ" title="読み上げ">
+                    <svg class="ico-play" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
+                        <path d="M19 5a10 10 0 0 1 0 14"></path>
+                    </svg>
+                    <svg class="ico-stop" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="6" y="6" width="12" height="12" rx="2"></rect>
+                    </svg>
+                </button>
+                <button class="settings-btn icon-btn" id="btn-check" aria-label="文章チェック" title="文章チェック">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 6h10"></path>
+                        <path d="M3 12h6"></path>
+                        <path d="M3 18h6"></path>
+                        <path d="m13 16 3 3 6-7"></path>
+                    </svg>
+                    <span class="btn-badge" id="check-badge"></span>
+                </button>
+                <button class="settings-btn icon-btn" id="btn-open-settings" aria-label="設定" title="設定">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                </button>
+            </div>
         </header>
 
         <!-- 記号ショートカットバー（彩度0・一連の指定記号） -->
@@ -554,38 +1045,101 @@
         </div>
 
         <main>
-            <!-- エディタ本体 -->
-            <textarea id="editor" placeholder="ここに文字を入力してください...&#10;キー入力に連動してミニキャラがトントン・もちもち弾みます！" autofocus></textarea>
+            <!-- エディタ本体：背面のハイライト用レイヤー＋前面のテキストエリア -->
+            <div class="editor-wrap" id="editor-wrap">
+                <div class="editor-layer editor-backdrop" id="backdrop" aria-hidden="true"></div>
+                <div class="editor-layer editor-measure" id="measure" aria-hidden="true"></div>
+                <textarea id="editor" class="editor-layer" placeholder="ここに文字を入力してください...&#10;キー入力に連動してミニキャラがトントン・もちもち弾みます！" autofocus></textarea>
+            </div>
 
             <!-- マスコットコンテナ（ドラッグ移動可能） -->
             <div class="mascot-container" id="mascot-container">
                 <img id="mascot-idle" class="mascot-img active" alt="待機中">
                 <img id="mascot-right" class="mascot-img" alt="右手打鍵">
                 <img id="mascot-left" class="mascot-img" alt="左手打鍵">
-                <div id="mascot-fallback" class="mascot-fallback" style="display: none;">
-                    <div class="mascot-fallback-face" id="fallback-face">🐰</div>
-                    <div class="mascot-fallback-hand" id="fallback-hand">♪</div>
+                <div id="mascot-fallback" class="mascot-fallback" data-pose="idle" style="display: none;">
+                    <svg viewBox="0 0 120 120" role="img" aria-label="ミニキャラ">
+                        <rect class="mc-key" x="20" y="100" width="80" height="9" rx="4.5"></rect>
+                        <path class="mc-body" d="M18 88 C18 52 36 28 60 28 C84 28 102 52 102 88 C102 100 90 104 60 104 C30 104 18 100 18 88 Z"></path>
+                        <path class="mc-shine" d="M34 52 C38 42 46 37 54 36"></path>
+                        <circle class="mc-eye" cx="47" cy="70" r="3.6"></circle>
+                        <circle class="mc-eye" cx="73" cy="70" r="3.6"></circle>
+                        <ellipse class="mc-blush" cx="37" cy="79" rx="6.5" ry="3.8"></ellipse>
+                        <ellipse class="mc-blush" cx="83" cy="79" rx="6.5" ry="3.8"></ellipse>
+                        <path class="mc-mouth" d="M55.5 77 Q60 81.5 64.5 77"></path>
+                        <g class="mc-hand mc-hand-l"><ellipse cx="42" cy="99" rx="9" ry="7"></ellipse></g>
+                        <g class="mc-hand mc-hand-r"><ellipse cx="78" cy="99" rx="9" ry="7"></ellipse></g>
+                    </svg>
                 </div>
             </div>
         </main>
+
+        <!-- チェック結果パネル -->
+        <section class="check-panel" id="check-panel" aria-label="チェック結果">
+            <div class="check-head">
+                <span class="check-title" id="check-title">チェック結果</span>
+                <label class="check-opt"><input type="checkbox" id="chk-dup" checked> 重複・多用</label>
+                <label class="check-opt"><input type="checkbox" id="chk-proof" checked> 校正補助</label>
+            </div>
+            <div class="check-list" id="check-list"></div>
+        </section>
     </div>
 
     <div class="modal-overlay" id="modal-settings">
         <div class="modal-card">
             <div class="modal-header">
                 <span class="modal-title">カスタマイズ設定</span>
-                <button class="close-btn" id="btn-close-settings" aria-label="閉じる">✕</button>
+                <button class="close-btn" id="btn-close-settings" aria-label="閉じる"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
             </div>
 
-            <div class="setting-group">
+            <div class="tab-bar" role="tablist" aria-label="設定の種類">
+                <button class="tab-btn" role="tab" data-tab="char" aria-selected="true">キャラ</button>
+                <button class="tab-btn" role="tab" data-tab="view" aria-selected="false" tabindex="-1">表示</button>
+                <button class="tab-btn" role="tab" data-tab="voice" aria-selected="false" tabindex="-1">読み上げ</button>
+                <button class="tab-btn" role="tab" data-tab="check" aria-selected="false" tabindex="-1">チェック</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="tab-panel" role="tabpanel" data-panel="char">
+<div class="setting-group">
                 <label class="setting-label">
                     <span>キャラクターサイズ</span>
                     <span id="size-value" style="font-weight:normal; font-size:0.8rem; opacity:0.8;">130px</span>
                 </label>
-                <input type="range" id="input-mascot-size" class="range-slider" min="80" max="220" step="5" value="130">
+                <input type="range" id="input-mascot-size" class="range-slider" min="80" max="400" step="5" value="130">
             </div>
 
-            <!-- エディタ表示設定（文字画面を見ながら調整可能） -->
+<!-- 画像設定 -->
+            <div class="setting-group">
+                <label class="setting-label">待機中の画像</label>
+                <div class="file-input-wrapper">
+                    <img id="prev-idle" class="file-preview-thumb" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><rect width='40' height='40' fill='%23f1f5f9'/></svg>">
+                    <span class="file-input-text" id="name-idle">画像を選択...</span>
+                    <input type="file" id="input-idle" accept="image/*">
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">右手で叩く画像</label>
+                <div class="file-input-wrapper">
+                    <img id="prev-right" class="file-preview-thumb" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><rect width='40' height='40' fill='%23f1f5f9'/></svg>">
+                    <span class="file-input-text" id="name-right">画像を選択...</span>
+                    <input type="file" id="input-right" accept="image/*">
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">左手で叩く画像</label>
+                <div class="file-input-wrapper">
+                    <img id="prev-left" class="file-preview-thumb" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><rect width='40' height='40' fill='%23f1f5f9'/></svg>">
+                    <span class="file-input-text" id="name-left">画像を選択...</span>
+                    <input type="file" id="input-left" accept="image/*">
+                </div>
+            </div>
+                </div>
+
+                <div class="tab-panel" role="tabpanel" data-panel="view" hidden>
+<!-- エディタ表示設定（文字画面を見ながら調整可能） -->
             <div class="setting-group">
                 <div class="setting-label">
                     <span>エディタ表示設定</span>
@@ -619,7 +1173,7 @@
                 </div>
             </div>
 
-            <!-- 背景色カスタム（色相 H / 彩度 S / 明度 L） -->
+<!-- 背景色カスタム（色相 H / 彩度 S / 明度 L） -->
             <div class="setting-group">
                 <div class="setting-label">
                     <span>背景色 (色相 / 彩度 / 明度)</span>
@@ -632,7 +1186,7 @@
                 </div>
             </div>
 
-            <!-- テキスト色カスタム（色相 H / 彩度 S / 明度 L） -->
+<!-- テキスト色カスタム（色相 H / 彩度 S / 明度 L） -->
             <div class="setting-group">
                 <div class="setting-label">
                     <span>テキスト色 (色相 / 彩度 / 明度)</span>
@@ -644,37 +1198,62 @@
                     <div class="color-slider-row"><span>明度 L</span><input type="range" id="text-l" class="range-slider" min="0" max="100" value="17"><span id="text-l-val">17%</span></div>
                 </div>
             </div>
+                </div>
 
-            <!-- 画像設定 -->
+                <div class="tab-panel" role="tabpanel" data-panel="voice" hidden>
+<!-- 音声読み上げ設定 -->
             <div class="setting-group">
-                <label class="setting-label">待機中の画像</label>
-                <div class="file-input-wrapper">
-                    <img id="prev-idle" class="file-preview-thumb" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><rect width='40' height='40' fill='%23f1f5f9'/></svg>">
-                    <span class="file-input-text" id="name-idle">画像を選択...</span>
-                    <input type="file" id="input-idle" accept="image/*">
+                <div class="setting-label">
+                    <span>読み上げ設定</span>
+                    <button class="btn-sub-reset" id="btn-reset-tts">リセット</button>
+                </div>
+                <div class="color-slider-group">
+                    <div class="color-slider-row">
+                        <span style="width:70px">速さ</span>
+                        <input type="range" id="tts-rate" class="range-slider" min="0.5" max="2" step="0.1" value="1">
+                        <span id="tts-rate-val">1.0</span>
+                    </div>
+                    <div class="color-slider-row">
+                        <span style="width:70px">高さ</span>
+                        <input type="range" id="tts-pitch" class="range-slider" min="0.5" max="2" step="0.1" value="1">
+                        <span id="tts-pitch-val">1.0</span>
+                    </div>
+                    <div class="color-slider-row" style="align-items: stretch;">
+                        <span style="width:70px; display:flex; align-items:center;">声</span>
+                        <select id="tts-voice">
+                            <option value="">自動（Siri優先）</option>
+                        </select>
+                    </div>
+                    <p class="setting-note">文字を選択してから「読み上げ」を押すと、選択部分だけを読みます。</p>
+                    <p class="setting-note" id="tts-siri-status"></p>
                 </div>
             </div>
+                </div>
 
+                <div class="tab-panel" role="tabpanel" data-panel="check" hidden>
+<!-- 重複・多用ワード検出の設定 -->
             <div class="setting-group">
-                <label class="setting-label">右手で叩く画像</label>
-                <div class="file-input-wrapper">
-                    <img id="prev-right" class="file-preview-thumb" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><rect width='40' height='40' fill='%23f1f5f9'/></svg>">
-                    <span class="file-input-text" id="name-right">画像を選択...</span>
-                    <input type="file" id="input-right" accept="image/*">
+                <div class="setting-label">
+                    <span>重複・多用ワードの検出</span>
+                    <button class="btn-sub-reset" id="btn-reset-check">リセット</button>
+                </div>
+                <div class="color-slider-group">
+                    <div class="color-slider-row">
+                        <span style="width:70px">範囲</span>
+                        <input type="range" id="check-window" class="range-slider" min="60" max="400" step="10" value="150">
+                        <span id="check-window-val" style="width:60px">150字</span>
+                    </div>
+                    <div class="color-slider-row">
+                        <span style="width:70px">回数</span>
+                        <input type="range" id="check-threshold" class="range-slider" min="2" max="6" step="1" value="3">
+                        <span id="check-threshold-val" style="width:60px">3回</span>
+                    </div>
+                    <p class="setting-note">「範囲」の文字数以内に、同じ言葉が「回数」以上出てくると黄色くハイライトします。人名など何度も出て当然の言葉は、結果パネルの「無視」で除外できます。</p>
+                    <button class="btn-sub-reset" id="btn-reset-ignore" style="align-self:flex-start;">無視リストを空にする</button>
                 </div>
             </div>
-
-            <div class="setting-group">
-                <label class="setting-label">左手で叩く画像</label>
-                <div class="file-input-wrapper">
-                    <img id="prev-left" class="file-preview-thumb" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><rect width='40' height='40' fill='%23f1f5f9'/></svg>">
-                    <span class="file-input-text" id="name-left">画像を選択...</span>
-                    <input type="file" id="input-left" accept="image/*">
                 </div>
             </div>
-
-            <button class="btn-action" id="btn-copy-text">📋 全文をコピーして Nola へ</button>
-            <button class="btn-action btn-danger" id="btn-reset-images">画像を初期化</button>
         </div>
     </div>
 
@@ -690,7 +1269,10 @@
             SIZE: 'gh_mochi_size',
             COLOR_BG: 'gh_mochi_color_bg',
             COLOR_TEXT: 'gh_mochi_color_text',
-            EDITOR_STYLE: 'gh_mochi_editor_style'
+            EDITOR_STYLE: 'gh_mochi_editor_style',
+            TTS: 'gh_mochi_tts',
+            CHECK: 'gh_mochi_check',
+            IGNORE: 'gh_mochi_ignore'
         };
 
         const DEFAULT_COLORS = {
@@ -704,6 +1286,9 @@
             width: 100,
             font: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif'
         };
+
+        const DEFAULT_TTS = { rate: 1, pitch: 1, voiceURI: '' };
+        const DEFAULT_CHECK = { enabled: false, dup: true, proof: true, window: 150, threshold: 3 };
 
         const IDLE_TIMEOUT_MS = 450;
         const MAX_IMAGE_DIM = 240;
@@ -739,6 +1324,25 @@
             } catch (e) {}
         }
 
+        function storageGetJSON(key, fallback) {
+            try {
+                const raw = storageGet(key);
+                if (raw === null) return fallback;
+                const parsed = JSON.parse(raw);
+                return parsed === null ? fallback : parsed;
+            } catch (e) {
+                return fallback;
+            }
+        }
+
+        function escapeHtml(str) {
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
         const mascotState = {
             images: { idle: null, right: null, left: null },
             currentHand: 'right',
@@ -749,6 +1353,9 @@
         };
 
         const editor = document.getElementById('editor');
+        const editorWrap = document.getElementById('editor-wrap');
+        const backdrop = document.getElementById('backdrop');
+        const measureEl = document.getElementById('measure');
         const charCount = document.getElementById('char-count');
         const mascotContainer = document.getElementById('mascot-container');
         const imgIdle = document.getElementById('mascot-idle');
@@ -760,7 +1367,6 @@
         const btnOpenSettings = document.getElementById('btn-open-settings');
         const btnCloseSettings = document.getElementById('btn-close-settings');
         const btnCopyText = document.getElementById('btn-copy-text');
-        const btnResetImages = document.getElementById('btn-reset-images');
         const inputMascotSize = document.getElementById('input-mascot-size');
         const toast = document.getElementById('toast');
 
@@ -811,8 +1417,7 @@
                 imgLeft.classList.remove('active');
                 mascotFallback.style.display = 'flex';
                 
-                document.getElementById('fallback-face').textContent = pose === 'idle' ? '🐰' : (pose === 'right' ? '🪘' : '🥁');
-                document.getElementById('fallback-hand').textContent = pose === 'idle' ? '♪' : (pose === 'right' ? '👉' : '👈');
+                mascotFallback.dataset.pose = pose;
             }
         }
 
@@ -883,6 +1488,7 @@
             editor.value = text.substring(0, start) + inserted + text.substring(end);
             storageSet(KEYS.TEXT, editor.value);
             updateCharCount();
+            scheduleCheck();
             
             editor.focus();
             editor.setSelectionRange(newCursorPos, newCursorPos);
@@ -993,24 +1599,649 @@
             updateEditorStyle();
         }
 
+        /* =====================================================
+           1. 音声読み上げ（Web Speech API / speechSynthesis）
+           ===================================================== */
+        const ttsState = { active: false, session: 0, rate: 1, pitch: 1, voiceURI: '', lastBoundary: 0 };
+        const TTS_SUPPORTED = 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined';
+
+        function initTTS() {
+            const btn = document.getElementById('btn-tts');
+            const elRate = document.getElementById('tts-rate');
+            const elPitch = document.getElementById('tts-pitch');
+            const elVoice = document.getElementById('tts-voice');
+
+            Object.assign(ttsState, DEFAULT_TTS, storageGetJSON(KEYS.TTS, {}));
+            elRate.value = ttsState.rate;
+            elPitch.value = ttsState.pitch;
+
+            function saveTTS() {
+                storageSet(KEYS.TTS, JSON.stringify({
+                    rate: ttsState.rate, pitch: ttsState.pitch, voiceURI: ttsState.voiceURI
+                }));
+            }
+
+            function syncLabels() {
+                document.getElementById('tts-rate-val').textContent = Number(ttsState.rate).toFixed(1);
+                document.getElementById('tts-pitch-val').textContent = Number(ttsState.pitch).toFixed(1);
+            }
+            syncLabels();
+
+            elRate.addEventListener('input', () => { ttsState.rate = parseFloat(elRate.value); syncLabels(); saveTTS(); });
+            elPitch.addEventListener('input', () => { ttsState.pitch = parseFloat(elPitch.value); syncLabels(); saveTTS(); });
+            elVoice.addEventListener('change', () => { ttsState.voiceURI = elVoice.value; saveTTS(); });
+
+            document.getElementById('btn-reset-tts').addEventListener('click', () => {
+                Object.assign(ttsState, DEFAULT_TTS);
+                elRate.value = ttsState.rate;
+                elPitch.value = ttsState.pitch;
+                elVoice.value = '';
+                syncLabels();
+                saveTTS();
+            });
+
+            if (!TTS_SUPPORTED) {
+                btn.style.opacity = '0.5';
+                elVoice.disabled = true;
+            } else {
+                loadVoices();
+                // 声の一覧は非同期で読み込まれるブラウザがある
+                speechSynthesis.addEventListener('voiceschanged', loadVoices);
+                window.addEventListener('pagehide', () => speechSynthesis.cancel());
+            }
+
+            btn.addEventListener('click', () => {
+                if (ttsState.active) stopSpeech();
+                else startSpeech();
+            });
+        }
+
+        function isSiriVoice(v) {
+            return /siri/i.test(v.name) || /siri/i.test(v.voiceURI);
+        }
+
+        function getJaVoices() {
+            return speechSynthesis.getVoices()
+                .filter(v => /^ja/i.test(v.lang))
+                .sort((a, b) => (isSiriVoice(b) - isSiriVoice(a)) || a.name.localeCompare(b.name, 'ja'));
+        }
+
+        // 選択された声。「自動」のときは Siri の声があればそれを優先する
+        function pickVoice() {
+            const voices = getJaVoices();
+            if (ttsState.voiceURI) {
+                const chosen = voices.find(v => v.voiceURI === ttsState.voiceURI);
+                if (chosen) return chosen;
+            }
+            return voices.find(isSiriVoice) || null;
+        }
+
+        function loadVoices() {
+            const elVoice = document.getElementById('tts-voice');
+            const voices = getJaVoices();
+            elVoice.innerHTML = '<option value="">自動（Siri優先）</option>' +
+                voices.map(v => `<option value="${escapeHtml(v.voiceURI)}">${escapeHtml(v.name)}</option>`).join('');
+            elVoice.value = ttsState.voiceURI;
+            if (elVoice.value !== ttsState.voiceURI) elVoice.value = '';
+
+            const status = document.getElementById('tts-siri-status');
+            if (status) {
+                status.textContent = voices.some(isSiriVoice)
+                    ? 'Siriの声が見つかりました。「自動」のときは優先して使います。'
+                    : 'この端末・ブラウザでは、Siriの声は一覧に出ていません。「自動」のときは端末の標準の日本語音声で読み上げます。Siriの声はiPhone・iPad・MacのSafariで、端末にダウンロード済みの場合に出ることがあります。';
+            }
+        }
+
+        // 長い文章は途中で止まるブラウザがあるため、文単位で小分けにして読み上げる
+        function chunkForSpeech(text) {
+            const cleaned = text.replace(/[＊*─■]+/g, '。');
+            const parts = cleaned.match(/[^。！？!?\n]*[。！？!?\n]+|[^。！？!?\n]+$/g) || [];
+            const chunks = [];
+            let buf = '';
+            for (const p of parts) {
+                if (buf && (buf + p).length > 120) { chunks.push(buf); buf = ''; }
+                if (p.length > 160) {
+                    for (let i = 0; i < p.length; i += 140) chunks.push(p.slice(i, i + 140));
+                } else {
+                    buf += p;
+                }
+            }
+            if (buf) chunks.push(buf);
+            return chunks
+                .map(c => c.trim())
+                .filter(c => c.replace(/[\s。、！？!?…・]/g, '').length > 0);
+        }
+
+        function setTtsUI(active) {
+            ttsState.active = active;
+            const btn = document.getElementById('btn-tts');
+            btn.classList.toggle('active', active);
+            btn.setAttribute('aria-label', active ? '読み上げを停止' : '読み上げ');
+            btn.title = active ? '読み上げを停止' : '読み上げ';
+        }
+
+        function startSpeech() {
+            if (!TTS_SUPPORTED) return showToast('このブラウザは読み上げに対応していません');
+
+            const s = editor.selectionStart, e = editor.selectionEnd;
+            const source = e > s ? editor.value.slice(s, e) : editor.value;
+            const chunks = chunkForSpeech(source);
+            if (chunks.length === 0) return showToast('読み上げる文章がありません');
+
+            ttsState.session++;
+            const mySession = ttsState.session;
+            speechSynthesis.cancel();
+            setTtsUI(true);
+
+            const voice = pickVoice();
+
+            chunks.forEach((chunk, i) => {
+                const u = new SpeechSynthesisUtterance(chunk);
+                u.lang = 'ja-JP';
+                u.rate = ttsState.rate;
+                u.pitch = ttsState.pitch;
+                if (voice) u.voice = voice;
+
+                // 読み上げ中はマスコットも一緒に弾ませる
+                u.onboundary = () => {
+                    const now = Date.now();
+                    if (mySession === ttsState.session && now - ttsState.lastBoundary > 140) {
+                        ttsState.lastBoundary = now;
+                        triggerMascotAnimation();
+                    }
+                };
+                u.onerror = (ev) => {
+                    if (mySession !== ttsState.session) return;
+                    if (ev.error === 'interrupted' || ev.error === 'canceled') return;
+                    finishSpeech();
+                    showToast('読み上げに失敗しました');
+                };
+                if (i === chunks.length - 1) {
+                    u.onend = () => { if (mySession === ttsState.session) finishSpeech(); };
+                }
+                speechSynthesis.speak(u);
+            });
+        }
+
+        function finishSpeech() {
+            setTtsUI(false);
+            setMascotPose('idle');
+        }
+
+        function stopSpeech() {
+            ttsState.session++;
+            if (TTS_SUPPORTED) speechSynthesis.cancel();
+            finishSpeech();
+        }
+
+        /* =====================================================
+           2 & 3. 重複表現のハイライト／校正補助
+           テキストエリアの背面に同じ見た目のレイヤーを重ねて、
+           該当箇所に色を付ける仕組み
+           ===================================================== */
+        const checkState = { ...DEFAULT_CHECK };
+        let checkTimer = null;
+        let currentIssues = [];
+        let ignoredWords = new Set();
+
+        const btnCheck = document.getElementById('btn-check');
+        const checkPanel = document.getElementById('check-panel');
+        const checkList = document.getElementById('check-list');
+        const checkBadge = document.getElementById('check-badge');
+
+        // 何度出てきても構わない一般的な語（重複検出から除外）
+        const STOP_WORDS = new Set([
+            'こと', 'もの', 'ため', 'ところ', 'これ', 'それ', 'あれ', 'どれ', 'ここ', 'そこ', 'あそこ',
+            'ある', 'いる', 'する', 'なる', 'できる', 'ない', 'よう', 'という', 'として', 'について',
+            'ように', 'ので', 'から', 'けれど', 'けれども', 'しかし', 'そして', 'でも', 'また', 'など',
+            'だけ', 'ほど', 'まで', 'より', 'さん', 'ちゃん', 'ました', 'ません', 'です', 'ます', 'でした',
+            'ている', 'ていた', 'していた', 'なった', 'あった', 'いた', 'した', 'して', 'される', 'された',
+            'れる', 'られる', 'その', 'この', 'あの', 'どの', 'ただ', 'だから', 'ですが', 'ですね', 'だった',
+            'である', 'では', 'には', 'とは', 'ながら', 'たり', 'ばかり', 'ほう', 'ござい', 'ございます',
+            'しまう', 'しまった', 'ください', 'くださ', 'いない', 'ような', 'ことが', 'ものが'
+        ]);
+
+        // 誤用・変換ミスの辞書 [誤り, 修正案, 種別]
+        const PROOF_DICT = [
+            // 誤用・変換ミス
+            ['的を得', '「的を射る」が正しい形です', '誤用・変換ミス'],
+            ['汚名を挽回', '「汚名返上」「名誉挽回」が正しい形です', '誤用・変換ミス'],
+            ['念頭に入れ', '「念頭に置く」が正しい形です', '誤用・変換ミス'],
+            ['押しも押されぬ', '「押しも押されもせぬ」が本来の形です', '誤用・変換ミス'],
+            ['うる覚え', '「うろ覚え」が正しい表記です', '誤用・変換ミス'],
+            ['二の舞を踏', '「二の舞を演じる」または「二の足を踏む」の混同かもしれません', '誤用・変換ミス'],
+            ['以外と', '「意外と」の変換ミスかもしれません', '誤用・変換ミス'],
+            ['絶対絶命', '「絶体絶命」が正しい表記です', '誤用・変換ミス'],
+            ['危機一発', '「危機一髪」が正しい表記です', '誤用・変換ミス'],
+            ['異句同音', '「異口同音」が正しい表記です', '誤用・変換ミス'],
+            ['心気一転', '「心機一転」が正しい表記です', '誤用・変換ミス'],
+            ['自我自賛', '「自画自賛」が正しい表記です', '誤用・変換ミス'],
+            ['短刀直入', '「単刀直入」が正しい表記です', '誤用・変換ミス'],
+            ['大義名文', '「大義名分」が正しい表記です', '誤用・変換ミス'],
+            ['とんでもございません', '「とんでもないことでございます」が本来の形です', '誤用・変換ミス'],
+            ['こんにちわ', '「こんにちは」が正しい表記です', '誤用・変換ミス'],
+            ['こんばんわ', '「こんばんは」が正しい表記です', '誤用・変換ミス'],
+            ['ふいんき', '「雰囲気」の読みの誤りです', '誤用・変換ミス'],
+            ['づつ', '現代仮名遣いでは「ずつ」です', '誤用・変換ミス'],
+            // 二重表現
+            ['頭痛が痛', '「頭痛がする」「頭が痛い」など', '二重表現'],
+            ['後で後悔', '「後悔」だけで足ります', '二重表現'],
+            ['あとで後悔', '「後悔」だけで足ります', '二重表現'],
+            ['違和感を感じ', '「違和感を覚える」「違和感がある」など', '二重表現'],
+            ['一番最初', '「最初」または「一番初め」など', '二重表現'],
+            ['まず最初に', '「最初に」または「まず」だけで足ります', '二重表現'],
+            ['被害を被', '「被害を受ける」「損害を被る」など', '二重表現'],
+            ['犯罪を犯', '「罪を犯す」「犯罪に手を染める」など', '二重表現'],
+            ['馬から落馬', '「落馬」だけで足ります', '二重表現'],
+            ['返事を返', '「返事をする」「返す」など', '二重表現'],
+            ['今の現状', '「現状」だけで足ります', '二重表現'],
+            ['過半数を超え', '「過半数に達する」「半数を超える」など', '二重表現'],
+            ['すべて全部', '「すべて」または「全部」だけで足ります', '二重表現']
+        ];
+
+        // 正規表現ベースの校正ルール
+        const PROOF_RULES = [
+            {
+                re: /のの(?!し)|がが|をを|にに/g,
+                cat: '助詞の連続',
+                title: m => `「${m[0]}」`,
+                detail: m => `助詞「${m[0][0]}」が重なっています`
+            },
+            {
+                re: /(?:[^のの。、！？!?\n「」]{1,6}の){3,}/g,
+                cat: '「の」の連続',
+                title: m => `「${m[0].length > 14 ? m[0].slice(0, 14) + '…' : m[0]}」`,
+                detail: () => '「の」が3回以上続いています。言い換えを検討してみてください'
+            },
+            {
+                re: /(?:食べ|見|来|出|着|寝|起き|降り|借り|信じ|考え|覚え|続け|止め|変え|届け|集め|逃げ|忘れ|求め|受け|付け|開け|決め|入れ|教え|答え)れ(?!ば)(?=る|ない|た|ます|ません|て|なかった)/g,
+                cat: 'ら抜き言葉',
+                title: m => `「${m[0]}」`,
+                detail: () => '「〜られる」が標準的な形です（ら抜き言葉の可能性）'
+            },
+            {
+                re: /[、。]{2,}/g,
+                cat: '句読点の重複',
+                title: m => `「${m[0]}」`,
+                detail: () => '句読点が連続しています'
+            }
+        ];
+
+        /* ---- 単語の分割 ---- */
+        let segmenter = null;
+        try {
+            if (typeof Intl !== 'undefined' && Intl.Segmenter) segmenter = new Intl.Segmenter('ja', { granularity: 'word' });
+        } catch (e) { segmenter = null; }
+
+        function tokenize(text) {
+            const tokens = [];
+            if (segmenter) {
+                for (const s of segmenter.segment(text)) {
+                    if (s.isWordLike) tokens.push({ w: s.segment, i: s.index });
+                }
+            } else {
+                // Intl.Segmenter が使えない環境向けの簡易分割
+                const re = /[\u4E00-\u9FFF々]{2,}|[\u30A1-\u30FAー]{2,}|[A-Za-z]{4,}|[\u3041-\u309F]{3,}/g;
+                let m;
+                while ((m = re.exec(text)) !== null) tokens.push({ w: m[0], i: m.index });
+            }
+            return tokens;
+        }
+
+        function isCountableWord(w) {
+            if (w.length < 2) return false;
+            if (STOP_WORDS.has(w)) return false;
+            if (ignoredWords.has(w)) return false;
+            if (/^[0-9０-９]+$/.test(w)) return false;
+            if (/^[\u3041-\u309F]+$/.test(w) && w.length < 3) return false;
+            if (/^[A-Za-z]+$/.test(w) && w.length < 4) return false;
+            return true;
+        }
+
+        /* ---- 重複・多用ワード ---- */
+        function findDuplicateWords(text) {
+            const map = new Map();
+            for (const t of tokenize(text)) {
+                if (!isCountableWord(t.w)) continue;
+                if (!map.has(t.w)) map.set(t.w, []);
+                map.get(t.w).push(t.i);
+            }
+
+            const W = checkState.window;
+            const T = checkState.threshold;
+            const issues = [];
+
+            for (const [word, poss] of map) {
+                if (poss.length < T) continue;
+                const hit = new Set();
+                let j = 0;
+                for (let i = 0; i < poss.length; i++) {
+                    if (j < i) j = i;
+                    while (j + 1 < poss.length && poss[j + 1] - poss[i] <= W) j++;
+                    if (j - i + 1 >= T) {
+                        for (let k = i; k <= j; k++) hit.add(k);
+                    }
+                }
+                if (hit.size === 0) continue;
+                const ranges = [...hit].sort((a, b) => a - b).map(k => [poss[k], poss[k] + word.length]);
+                issues.push({
+                    kind: 'dup',
+                    cat: '多用',
+                    title: `「${word}」`,
+                    detail: `${W}字以内に${T}回以上・計${ranges.length}箇所`,
+                    word,
+                    ranges
+                });
+            }
+            return issues;
+        }
+
+        /* ---- 同じ文末が3文以上続く ---- */
+        function findRepeatedEndings(text) {
+            const issues = [];
+            const re = /[^。！？!?\n]+[。！？!?]+/g;
+            let prevEnd = -1;
+            let run = { ending: '', ranges: [] };
+
+            const flush = () => {
+                if (run.ranges.length >= 3) {
+                    issues.push({
+                        kind: 'dup',
+                        cat: '文末の連続',
+                        title: `文末「${run.ending}」`,
+                        detail: `${run.ranges.length}文続けて同じ終わり方です`,
+                        ranges: run.ranges
+                    });
+                }
+                run = { ending: '', ranges: [] };
+            };
+
+            let m;
+            while ((m = re.exec(text)) !== null) {
+                const body = m[0].replace(/[。！？!?]+$/, '');
+                const ending = body.slice(-2);
+                const isDialogue = body.startsWith('「') || body.endsWith('」');
+                const usable = !isDialogue && body.length >= 4 && /^[\u3041-\u309F]{2}$/.test(ending);
+                const contiguous = prevEnd >= 0 && !text.slice(prevEnd, m.index).includes('\n');
+
+                if (usable && contiguous && ending === run.ending) {
+                    run.ranges.push([m.index + body.length - 2, m.index + body.length]);
+                } else {
+                    flush();
+                    if (usable) run = { ending, ranges: [[m.index + body.length - 2, m.index + body.length]] };
+                }
+                prevEnd = m.index + m[0].length;
+            }
+            flush();
+            return issues;
+        }
+
+        function findDuplicates(text) {
+            return [...findDuplicateWords(text), ...findRepeatedEndings(text)];
+        }
+
+        /* ---- 括弧の対応 ---- */
+        function findBracketIssues(text) {
+            const pairs = { '「': '」', '『': '』', '（': '）', '【': '】' };
+            const closers = new Set(Object.values(pairs));
+            const stack = [];
+            const issues = [];
+            const push = (idx, msg) => issues.push({
+                kind: 'proof', cat: '括弧の対応', title: `「${text[idx]}」`, detail: msg, ranges: [[idx, idx + 1]]
+            });
+
+            for (let i = 0; i < text.length; i++) {
+                const ch = text[i];
+                if (pairs[ch]) {
+                    stack.push({ ch, i });
+                } else if (closers.has(ch)) {
+                    if (stack.length && pairs[stack[stack.length - 1].ch] === ch) stack.pop();
+                    else push(i, '対応する開き括弧が見つかりません');
+                }
+            }
+            stack.forEach(s => push(s.i, '閉じ括弧が見つかりません'));
+            return issues;
+        }
+
+        /* ---- 誤用・助詞・ら抜きなど ---- */
+        function findProofIssues(text) {
+            const issues = [];
+
+            for (const [bad, advice, cat] of PROOF_DICT) {
+                let idx = text.indexOf(bad);
+                while (idx !== -1) {
+                    issues.push({ kind: 'proof', cat, title: `「${bad}」`, detail: advice, ranges: [[idx, idx + bad.length]] });
+                    idx = text.indexOf(bad, idx + bad.length);
+                }
+            }
+
+            for (const rule of PROOF_RULES) {
+                rule.re.lastIndex = 0;
+                let m;
+                while ((m = rule.re.exec(text)) !== null) {
+                    if (m[0].length === 0) { rule.re.lastIndex++; continue; }
+                    issues.push({
+                        kind: 'proof',
+                        cat: rule.cat,
+                        title: rule.title(m),
+                        detail: rule.detail(m),
+                        ranges: [[m.index, m.index + m[0].length]]
+                    });
+                }
+            }
+
+            issues.push(...findBracketIssues(text));
+            return issues;
+        }
+
+        /* ---- 実行と描画 ---- */
+        function scheduleCheck() {
+            if (!checkState.enabled) return;
+            clearTimeout(checkTimer);
+            checkTimer = setTimeout(runChecks, 250);
+        }
+
+        function runChecks() {
+            if (!checkState.enabled) return;
+            const text = editor.value;
+            let issues = [];
+            if (text) {
+                if (checkState.dup) issues = issues.concat(findDuplicates(text));
+                if (checkState.proof) issues = issues.concat(findProofIssues(text));
+            }
+            issues.sort((a, b) => a.ranges[0][0] - b.ranges[0][0]);
+            currentIssues = issues;
+            renderHighlights(text, issues);
+            renderCheckPanel(issues, text);
+        }
+
+        function renderHighlights(text, issues) {
+            if (!checkState.enabled) {
+                backdrop.innerHTML = '';
+                return;
+            }
+            const mask = new Uint8Array(text.length);
+            for (const is of issues) {
+                const bit = is.kind === 'dup' ? 1 : 2;
+                for (const [s, e] of is.ranges) {
+                    for (let k = s; k < e && k < mask.length; k++) mask[k] |= bit;
+                }
+            }
+            const cls = { 1: 'hl-dup', 2: 'hl-proof', 3: 'hl-both' };
+            let html = '';
+            let i = 0;
+            while (i < text.length) {
+                let j = i + 1;
+                while (j < text.length && mask[j] === mask[i]) j++;
+                const seg = escapeHtml(text.slice(i, j));
+                html += mask[i] ? `<span class="${cls[mask[i]]}">${seg}</span>` : seg;
+                i = j;
+            }
+            // 末尾の改行でも高さがテキストエリアと揃うよう、空白を1つ足す
+            backdrop.innerHTML = html + ' ';
+            syncBackdropScroll();
+        }
+
+        function syncBackdropScroll() {
+            backdrop.scrollTop = editor.scrollTop;
+            backdrop.scrollLeft = editor.scrollLeft;
+        }
+
+        function renderCheckPanel(issues, text) {
+            checkBadge.textContent = issues.length > 0 ? String(issues.length) : '';
+            document.getElementById('check-title').textContent =
+                issues.length > 0 ? `チェック結果（${issues.length}件）` : 'チェック結果';
+
+            if (!text) {
+                checkList.innerHTML = '<div class="check-empty">文章を入力すると、ここに結果が表示されます。</div>';
+                return;
+            }
+            if (!checkState.dup && !checkState.proof) {
+                checkList.innerHTML = '<div class="check-empty">チェック項目がすべてオフです。</div>';
+                return;
+            }
+            if (issues.length === 0) {
+                checkList.innerHTML = '<div class="check-empty">気になる箇所は見つかりませんでした</div>';
+                return;
+            }
+
+            checkList.innerHTML = issues.map((is, idx) => {
+                const tagCls = is.kind === 'dup' ? 'dup' : 'proof';
+                const ignoreBtn = is.word
+                    ? `<button class="issue-ignore" data-ignore="${idx}" title="この言葉を今後チェックしない">無視</button>`
+                    : '';
+                return `<div class="issue-row">
+                    <button class="issue-item" data-jump="${idx}">
+                        <span class="issue-tag ${tagCls}">${escapeHtml(is.cat)}</span>
+                        <span class="issue-title">${escapeHtml(is.title)}</span>
+                        <span class="issue-detail">${escapeHtml(is.detail)}</span>
+                    </button>${ignoreBtn}
+                </div>`;
+            }).join('');
+        }
+
+        // 指定位置が見える位置までエディタをスクロール（背面と同じ折り返しで高さを測る）
+        function scrollEditorTo(pos) {
+            measureEl.innerHTML = escapeHtml(editor.value.slice(0, pos)) + '<span id="measure-anchor">\u200b</span>';
+            const anchor = document.getElementById('measure-anchor');
+            const top = anchor ? anchor.offsetTop : 0;
+            measureEl.innerHTML = '';
+            editor.scrollTop = Math.max(0, top - editor.clientHeight / 3);
+            syncBackdropScroll();
+        }
+
+        function jumpToIssue(idx) {
+            const is = currentIssues[idx];
+            if (!is) return;
+            const [s, e] = is.ranges[0];
+            editor.focus({ preventScroll: true });
+            editor.setSelectionRange(s, e);
+            scrollEditorTo(s);
+        }
+
+        function setCheckEnabled(enabled) {
+            checkState.enabled = enabled;
+            btnCheck.classList.toggle('active', enabled);
+            checkPanel.classList.toggle('open', enabled);
+            editorWrap.classList.toggle('hl-on', enabled);
+            saveCheckState();
+            if (enabled) {
+                runChecks();
+            } else {
+                backdrop.innerHTML = '';
+                checkBadge.textContent = '';
+            }
+        }
+
+        function saveCheckState() {
+            storageSet(KEYS.CHECK, JSON.stringify(checkState));
+        }
+
+        function updateIgnoreButton() {
+            document.getElementById('btn-reset-ignore').textContent =
+                ignoredWords.size > 0 ? `無視リストを空にする（${ignoredWords.size}語）` : '無視リストを空にする';
+        }
+
+        function initChecks() {
+            Object.assign(checkState, DEFAULT_CHECK, storageGetJSON(KEYS.CHECK, {}));
+            const savedIgnore = storageGetJSON(KEYS.IGNORE, []);
+            ignoredWords = new Set(Array.isArray(savedIgnore) ? savedIgnore : []);
+
+            const chkDup = document.getElementById('chk-dup');
+            const chkProof = document.getElementById('chk-proof');
+            const elWindow = document.getElementById('check-window');
+            const elThreshold = document.getElementById('check-threshold');
+
+            chkDup.checked = checkState.dup;
+            chkProof.checked = checkState.proof;
+            elWindow.value = checkState.window;
+            elThreshold.value = checkState.threshold;
+
+            function syncLabels() {
+                document.getElementById('check-window-val').textContent = `${checkState.window}字`;
+                document.getElementById('check-threshold-val').textContent = `${checkState.threshold}回`;
+            }
+            syncLabels();
+            updateIgnoreButton();
+
+            btnCheck.addEventListener('click', () => setCheckEnabled(!checkState.enabled));
+
+            chkDup.addEventListener('change', () => { checkState.dup = chkDup.checked; saveCheckState(); runChecks(); });
+            chkProof.addEventListener('change', () => { checkState.proof = chkProof.checked; saveCheckState(); runChecks(); });
+
+            elWindow.addEventListener('input', () => {
+                checkState.window = parseInt(elWindow.value);
+                syncLabels(); saveCheckState(); scheduleCheck();
+            });
+            elThreshold.addEventListener('input', () => {
+                checkState.threshold = parseInt(elThreshold.value);
+                syncLabels(); saveCheckState(); scheduleCheck();
+            });
+
+            document.getElementById('btn-reset-check').addEventListener('click', () => {
+                checkState.window = DEFAULT_CHECK.window;
+                checkState.threshold = DEFAULT_CHECK.threshold;
+                elWindow.value = checkState.window;
+                elThreshold.value = checkState.threshold;
+                syncLabels(); saveCheckState(); scheduleCheck();
+            });
+
+            document.getElementById('btn-reset-ignore').addEventListener('click', () => {
+                ignoredWords.clear();
+                storageSet(KEYS.IGNORE, '[]');
+                updateIgnoreButton();
+                scheduleCheck();
+                showToast('無視リストを空にしました');
+            });
+
+            checkList.addEventListener('click', (e) => {
+                const ignoreBtn = e.target.closest('[data-ignore]');
+                if (ignoreBtn) {
+                    const is = currentIssues[parseInt(ignoreBtn.dataset.ignore)];
+                    if (is && is.word) {
+                        ignoredWords.add(is.word);
+                        storageSet(KEYS.IGNORE, JSON.stringify([...ignoredWords]));
+                        updateIgnoreButton();
+                        runChecks();
+                        showToast(`「${is.word}」を無視リストに追加しました`);
+                    }
+                    return;
+                }
+                const jumpBtn = e.target.closest('[data-jump]');
+                if (jumpBtn) jumpToIssue(parseInt(jumpBtn.dataset.jump));
+            });
+
+            editor.addEventListener('input', scheduleCheck);
+            editor.addEventListener('scroll', syncBackdropScroll);
+
+            setCheckEnabled(checkState.enabled);
+        }
+
         function initImageSettings() {
             loadSavedImages();
             setupFileInput('input-idle', 'prev-idle', 'name-idle', KEYS.POS_IDLE, 'idle');
             setupFileInput('input-right', 'prev-right', 'name-right', KEYS.POS_RIGHT, 'right');
             setupFileInput('input-left', 'prev-left', 'name-left', KEYS.POS_LEFT, 'left');
-
-            btnResetImages.addEventListener('click', () => {
-                storageRemove(KEYS.POS_IDLE); storageRemove(KEYS.POS_RIGHT); storageRemove(KEYS.POS_LEFT);
-                mascotState.images = { idle: null, right: null, left: null };
-                const blankSvg = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><rect width='40' height='40' fill='%23f1f5f9'/></svg>";
-                ['idle', 'right', 'left'].forEach(k => {
-                    document.getElementById(`mascot-${k}`).src = '';
-                    document.getElementById(`prev-${k}`).src = blankSvg;
-                    document.getElementById(`name-${k}`).textContent = '画像を選択...';
-                });
-                setMascotPose('idle');
-                showToast('画像を初期化しました');
-            });
         }
 
         function loadSavedImages() {
@@ -1059,7 +2290,35 @@
             });
         }
 
+        function initTabs() {
+            const tabs = [...document.querySelectorAll('.tab-btn')];
+            const panels = [...document.querySelectorAll('.tab-panel')];
+            const body = document.querySelector('.modal-body');
+
+            function activate(name, focus) {
+                tabs.forEach(t => {
+                    const on = t.dataset.tab === name;
+                    t.setAttribute('aria-selected', on ? 'true' : 'false');
+                    t.tabIndex = on ? 0 : -1;
+                    if (on && focus) t.focus();
+                });
+                panels.forEach(p => { p.hidden = p.dataset.panel !== name; });
+                body.scrollTop = 0;
+            }
+
+            tabs.forEach((t, i) => {
+                t.addEventListener('click', () => activate(t.dataset.tab, false));
+                t.addEventListener('keydown', (e) => {
+                    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+                    const next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+                    activate(next.dataset.tab, true);
+                    e.preventDefault();
+                });
+            });
+        }
+
         function initUI() {
+            initTabs();
             btnOpenSettings.addEventListener('click', () => modalSettings.classList.add('active'));
             btnCloseSettings.addEventListener('click', () => modalSettings.classList.remove('active'));
             modalSettings.addEventListener('click', (e) => {
@@ -1105,6 +2364,8 @@
             initEditorSettings();
             initImageSettings();
             initUI();
+            initTTS();
+            initChecks();
         });
     </script>
 </body>
