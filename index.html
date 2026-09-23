@@ -7,6 +7,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>もちもちライター</title>
+    <meta name="theme-color" id="meta-theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
 
     <style>
         :root {
@@ -72,6 +74,16 @@
             transition: background 0.3s ease, color 0.3s ease;
         }
 
+        #bg-image-layer {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            pointer-events: none;
+        }
+
         #app-container {
             display: flex;
             flex-direction: column;
@@ -79,6 +91,7 @@
             height: 100vh;
             height: 100dvh;
             position: relative;
+            z-index: 1;
             padding-left: var(--safe-l);
             padding-right: var(--safe-r);
         }
@@ -189,6 +202,61 @@
 
         .btn-badge:empty { display: none; }
 
+        /* ===== ポモドーロタイマー ===== */
+        #btn-pomo { position: relative; overflow: hidden; }
+        #btn-pomo::before {
+            content: '';
+            position: absolute;
+            inset: 1px;
+            border-radius: 50%;
+            background: conic-gradient(var(--top-text-primary) calc(var(--pomo-pct, 0) * 1%), transparent 0);
+            opacity: 0;
+            transition: opacity 0.25s ease;
+            z-index: -1;
+        }
+        #btn-pomo.running::before { opacity: 0.28; }
+        #btn-pomo.on-break::before { background: conic-gradient(#22c55e calc(var(--pomo-pct, 0) * 1%), transparent 0); }
+
+        .pomo-panel {
+            position: fixed;
+            top: 54px;
+            right: 12px;
+            width: 220px;
+            background: var(--top-bg);
+            backdrop-filter: blur(28px) saturate(140%);
+            -webkit-backdrop-filter: blur(28px) saturate(140%);
+            border: 1px solid var(--top-border);
+            border-radius: 16px;
+            padding: 14px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+            z-index: 50;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: var(--top-text-primary);
+        }
+        .pomo-panel.open { display: flex; }
+        .pomo-phase { font-size: 0.78rem; font-weight: 700; opacity: 0.7; letter-spacing: 0.08em; }
+        .pomo-time { font-size: 2rem; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+        .pomo-controls { display: flex; gap: 8px; width: 100%; }
+        .pomo-controls .symbol-add-btn { flex: 1; }
+        .pomo-controls .btn-sub-reset { flex: 1; text-align: center; }
+        .pomo-settings-row { display: flex; gap: 10px; margin-top: 4px; font-size: 0.74rem; opacity: 0.85; }
+        .pomo-settings-row label { display: flex; align-items: center; gap: 5px; }
+        .pomo-settings-row input {
+            width: 44px;
+            padding: 3px 5px;
+            border-radius: 6px;
+            border: 1px solid var(--top-border);
+            background: rgba(255,255,255,0.4);
+            color: var(--top-text-primary);
+            font-size: 0.76rem;
+            text-align: center;
+        }
+        @media (prefers-color-scheme: dark) { .pomo-settings-row input { background: rgba(0,0,0,0.3); } }
+        @media (max-width: 380px) { .pomo-panel { right: 6px; width: 200px; } }
+
         /* ===== 記号ショートカットバー ===== */
         .symbol-bar {
             display: flex;
@@ -213,7 +281,7 @@
             border: 1px solid var(--top-border);
             color: var(--top-text-primary);
             padding: 5px 13px;
-            border-radius: 20px;
+            border-radius: 9px;
             font-size: 0.86rem;
             font-weight: 500;
             cursor: pointer;
@@ -267,12 +335,23 @@
             color: var(--top-text-secondary);
             line-height: 1.5;
         }
-        .symbol-edit-list {
+        .symbol-edit-inner {
+            max-width: 640px;
+            width: 100%;
+            margin: 0 auto;
             display: flex;
             flex-direction: column;
+            gap: 8px;
+        }
+        .symbol-edit-list {
+            display: grid;
+            grid-template-columns: 1fr;
             gap: 6px;
-            max-height: 32vh;
+            max-height: 34vh;
             overflow-y: auto;
+        }
+        @media (min-width: 620px) {
+            .symbol-edit-list { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
         }
         .symbol-edit-item {
             display: flex;
@@ -324,9 +403,14 @@
             display: grid;
             grid-template-columns: 70px 1fr 1fr auto;
             gap: 6px;
-            align-items: center;
+            align-items: start;
         }
-        .symbol-add-form input {
+        @media (max-width: 500px) {
+            .symbol-add-form { grid-template-columns: 1fr 1fr; }
+            .symbol-add-form .symbol-add-btn { grid-column: 1 / -1; }
+        }
+        .symbol-add-form input,
+        .symbol-add-form textarea {
             width: 100%;
             padding: 7px 9px;
             border-radius: 9px;
@@ -336,11 +420,14 @@
             font-size: 0.78rem;
             outline: none;
             font-family: inherit;
+            resize: vertical;
+            min-height: 34px;
+            line-height: 1.4;
         }
         @media (prefers-color-scheme: dark) {
-            .symbol-add-form input { background: rgba(0,0,0,0.3); }
+            .symbol-add-form input, .symbol-add-form textarea { background: rgba(0,0,0,0.3); }
         }
-        .symbol-add-form input::placeholder { opacity: 0.55; }
+        .symbol-add-form input::placeholder, .symbol-add-form textarea::placeholder { opacity: 0.55; }
         .symbol-add-btn {
             padding: 7px 12px;
             border-radius: 9px;
@@ -371,14 +458,19 @@
             margin: 0 auto;
         }
 
-        .editor-wrap.paper-on {
-            background-color: rgba(0,0,0,0.012);
+        /* 紙テクスチャ：main要素に固定サイズで敷くので、文章の幅を変えても粒の大きさは変わらない */
+        main.paper-on {
+            background-color: transparent;
+            background-repeat: repeat, repeat, no-repeat;
+            background-size: 340px 340px, 96px 96px, 100% 100%;
+            background-position: 0 0, 0 0, center;
             background-image:
-                repeating-linear-gradient(0deg, rgba(120,110,90,0.05) 0px, rgba(120,110,90,0.05) 1px, transparent 1px, transparent 3px),
-                url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.05 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
-            background-blend-mode: multiply;
-            border-radius: 6px;
+                url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='340'><filter id='p1'><feTurbulence type='fractalNoise' baseFrequency='0.012 0.018' numOctaves='3' seed='7' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.16 0'/></filter><rect width='100%25' height='100%25' filter='url(%23p1)'/></svg>"),
+                url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96'><filter id='p2'><feTurbulence type='fractalNoise' baseFrequency='0.55 0.85' numOctaves='2' seed='42' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.09 0'/></filter><rect width='100%25' height='100%25' filter='url(%23p2)'/></svg>"),
+                radial-gradient(ellipse 120% 90% at 50% 0%, rgba(0,0,0,0.05), transparent 70%);
+            background-blend-mode: multiply, multiply, multiply;
         }
+        main.paper-on .editor-wrap { background: transparent; }
 
         /* テキストエリアと背面レイヤーで、文字の折り返しが完全に一致するよう同じ設定を共有 */
         .editor-layer {
@@ -871,19 +963,35 @@
         .preset-name { flex: 1; min-width: 0; font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         /* ---- マスコットセット ---- */
-        .set-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-        .set-tab {
-            padding: 5px 12px;
-            border-radius: 14px;
-            border: 1px solid rgba(150,150,150,0.3);
-            background: transparent;
-            color: var(--text-primary);
-            font-size: 0.78rem;
-            font-weight: 600;
-            cursor: pointer;
+        .mascot-set-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            border-radius: 10px;
+            border: 1px solid rgba(150,150,150,0.28);
+            margin-bottom: 6px;
         }
-        .set-tab.active { background: var(--text-primary); color: var(--bg-gradient-1); border-color: transparent; }
-        .set-tab.add-set { border-style: dashed; opacity: 0.7; }
+        .mascot-set-row.editing { border-color: var(--text-primary); }
+        .switch.small { width: 34px; height: 20px; }
+        .switch.small .switch-track::before { width: 14px; height: 14px; top: 3px; left: 3px; }
+        .switch.small input:checked + .switch-track::before { transform: translateX(14px); }
+        .set-name-btn {
+            flex: 1;
+            min-width: 0;
+            text-align: left;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 0.84rem;
+            font-weight: 600;
+            padding: 4px 2px;
+            cursor: pointer;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .mascot-set-row.editing .set-name-btn { text-decoration: underline; }
 
         .mascot-slots { display: flex; gap: 8px; }
         .mascot-slot {
@@ -909,8 +1017,6 @@
             text-align: center;
         }
         .mascot-slot input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-        .mascot-set-actions { display: flex; gap: 8px; margin-top: 10px; }
-        .mascot-set-actions .btn-sub-reset { flex: 1; }
 
         .toast {
             position: fixed;
@@ -947,7 +1053,7 @@
 
         /* ===== レスポンシブ：スマホ／タブレット、縦横 ===== */
         @media (max-width: 600px) {
-            .char-counter { display: none; }
+            .char-counter { font-size: 0.68rem; }
             .icon-btn { width: 34px; height: 34px; }
             .symbol-btn { padding: 5px 11px; font-size: 0.82rem; }
             .modal-card { max-width: none; width: 100%; border-radius: 16px 16px 0 0; }
@@ -969,6 +1075,7 @@
     </style>
 </head>
 <body>
+    <div id="bg-image-layer"></div>
     <div id="app-container">
         <!-- 上部ナビゲーション（彩度0固定） -->
         <header>
@@ -1001,6 +1108,13 @@
                     </svg>
                     <span class="btn-badge" id="check-badge"></span>
                 </button>
+                <button class="settings-btn icon-btn" id="btn-pomo" aria-label="ポモドーロタイマー" title="ポモドーロタイマー">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="13" r="8"></circle>
+                        <path d="M12 9v4l3 2"></path>
+                        <path d="M9 2h6"></path>
+                    </svg>
+                </button>
                 <button class="settings-btn icon-btn" id="btn-open-settings" aria-label="設定" title="設定">
                     <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="3"></circle>
@@ -1010,21 +1124,37 @@
             </div>
         </header>
 
+        <!-- ポモドーロタイマーのポップアップ -->
+        <div class="pomo-panel" id="pomo-panel">
+            <div class="pomo-phase" id="pomo-phase">作業</div>
+            <div class="pomo-time" id="pomo-time">25:00</div>
+            <div class="pomo-controls">
+                <button class="symbol-add-btn" id="pomo-startpause">開始</button>
+                <button class="btn-sub-reset" id="pomo-reset">リセット</button>
+            </div>
+            <div class="pomo-settings-row">
+                <label>作業<input type="number" id="pomo-work-min" min="1" max="120" value="25"></label>
+                <label>休憩<input type="number" id="pomo-break-min" min="1" max="60" value="5"></label>
+            </div>
+        </div>
+
         <!-- 記号ショートカットバー（カスタム可能） -->
         <div class="symbol-bar" id="symbol-bar"></div>
 
         <div class="symbol-edit-row" id="symbol-edit-row">
-            <p class="symbol-edit-note">並び替え・追加・削除ができます。誤操作を防ぐため、この編集画面は上の鉛筆アイコンを押したときだけ開きます（タップでは文章に入力されません）。</p>
-            <div class="symbol-edit-list" id="symbol-edit-list"></div>
-            <div class="symbol-add-form">
-                <input type="text" id="se-new-label" placeholder="ボタン表記" maxlength="6">
-                <input type="text" id="se-new-before" placeholder="入力される文字（前）">
-                <input type="text" id="se-new-after" placeholder="後ろ（任意）">
-                <button class="symbol-add-btn" id="se-add-btn">追加</button>
+            <div class="symbol-edit-inner">
+                <p class="symbol-edit-note">並び替え・追加・削除ができます。誤操作を防ぐため、この編集画面は上の鉛筆アイコンを押したときだけ開きます（タップでは文章に入力されません）。入力欄は改行もできます。</p>
+                <div class="symbol-edit-list" id="symbol-edit-list"></div>
+                <div class="symbol-add-form">
+                    <input type="text" id="se-new-label" placeholder="ボタン表記" maxlength="6">
+                    <textarea id="se-new-before" rows="1" placeholder="入力される文字（前）"></textarea>
+                    <textarea id="se-new-after" rows="1" placeholder="後ろ（任意）"></textarea>
+                    <button class="symbol-add-btn" id="se-add-btn">追加</button>
+                </div>
             </div>
         </div>
 
-        <main>
+        <main id="app-main">
             <!-- エディタ本体：背面のハイライト用レイヤー＋前面のテキストエリア -->
             <div class="editor-wrap" id="editor-wrap">
                 <div class="editor-layer editor-backdrop" id="backdrop" aria-hidden="true"></div>
@@ -1032,26 +1162,8 @@
                 <textarea id="editor" class="editor-layer" placeholder="ここに文字を入力してください...&#10;キー入力に連動してミニキャラがトントン・もちもち弾みます！" autofocus></textarea>
             </div>
 
-            <!-- マスコットコンテナ（ドラッグ移動可能） -->
-            <div class="mascot-container" id="mascot-container">
-                <img id="mascot-idle" class="mascot-img active" alt="待機中">
-                <img id="mascot-right" class="mascot-img" alt="右手打鍵">
-                <img id="mascot-left" class="mascot-img" alt="左手打鍵">
-                <div id="mascot-fallback" class="mascot-fallback" data-pose="idle" style="display: none;">
-                    <svg viewBox="0 0 120 120" role="img" aria-label="ミニキャラ">
-                        <rect class="mc-key" x="20" y="100" width="80" height="9" rx="4.5"></rect>
-                        <path class="mc-body" d="M18 88 C18 52 36 28 60 28 C84 28 102 52 102 88 C102 100 90 104 60 104 C30 104 18 100 18 88 Z"></path>
-                        <path class="mc-shine" d="M34 52 C38 42 46 37 54 36"></path>
-                        <circle class="mc-eye" cx="47" cy="70" r="3.6"></circle>
-                        <circle class="mc-eye" cx="73" cy="70" r="3.6"></circle>
-                        <ellipse class="mc-blush" cx="37" cy="79" rx="6.5" ry="3.8"></ellipse>
-                        <ellipse class="mc-blush" cx="83" cy="79" rx="6.5" ry="3.8"></ellipse>
-                        <path class="mc-mouth" d="M55.5 77 Q60 81.5 64.5 77"></path>
-                        <g class="mc-hand mc-hand-l"><ellipse cx="42" cy="99" rx="9" ry="7"></ellipse></g>
-                        <g class="mc-hand mc-hand-r"><ellipse cx="78" cy="99" rx="9" ry="7"></ellipse></g>
-                    </svg>
-                </div>
-            </div>
+            <!-- マスコットは表示中のセットごとに JS で生成（複数人表示に対応） -->
+            <div id="mascot-layer"></div>
         </main>
 
         <!-- チェック結果パネル -->
@@ -1092,8 +1204,9 @@
 
                     <div class="setting-group">
                         <div class="setting-label"><span>キャラクターセット</span></div>
-                        <div class="set-tabs" id="set-tabs"></div>
-                        <div class="mascot-slots">
+                        <p class="setting-note" style="margin-bottom:8px;">左のスイッチで画面への表示・非表示を切り替えられます。複数オンにすると、同時に何人も表示されます。名前をタップすると、下の画像を編集できます。</p>
+                        <div id="set-tabs"></div>
+                        <div class="mascot-slots" style="margin-top:10px;">
                             <div class="mascot-slot" id="slot-idle">
                                 <span class="slot-label">待機</span>
                                 <img id="slot-idle-img" alt="待機中の画像">
@@ -1110,11 +1223,7 @@
                                 <input type="file" id="input-left" accept="image/*">
                             </div>
                         </div>
-                        <div class="mascot-set-actions">
-                            <button class="btn-sub-reset" id="btn-rename-set">名前を変更</button>
-                            <button class="btn-sub-reset" id="btn-delete-set">このセットを削除</button>
-                        </div>
-                        <p class="setting-note" style="margin-top:8px;">画像が無いスロットは枠と文字だけの表示になります。セットを切り替えると、キャラの見た目もすぐに変わります。</p>
+                        <p class="setting-note" style="margin-top:8px;">画像が無いスロットは枠と文字だけの表示になります。</p>
                     </div>
                 </div>
 
@@ -1167,7 +1276,38 @@
                                 <span class="switch-track"></span>
                             </label>
                         </div>
-                        <p class="setting-note">オンにすると、画用紙のようなうっすらとした質感を執筆エリアに重ねます。</p>
+                        <p class="setting-note">オンにすると、画用紙のようなうっすらとした質感を執筆エリアに重ねます。文章の幅を変えても、粒の大きさは変わりません。</p>
+                    </div>
+
+                    <div class="setting-group">
+                        <div class="setting-label"><span>背景画像</span></div>
+                        <div class="toggle-row">
+                            <span class="setting-note" style="font-weight:600; color:var(--text-primary); opacity:1;">画像を背景に使う</span>
+                            <label class="switch">
+                                <input type="checkbox" id="bgimg-toggle">
+                                <span class="switch-track"></span>
+                            </label>
+                        </div>
+                        <div class="file-input-wrapper" style="position:relative; display:flex; align-items:center; gap:10px; border:1px dashed rgba(150,150,150,0.4); border-radius:12px; padding:8px 10px; margin-top:8px;">
+                            <span class="setting-note" id="bgimg-filename" style="flex:1;">画像を選択...</span>
+                            <input type="file" id="bgimg-input" accept="image/*" style="position:absolute; inset:0; opacity:0; cursor:pointer;">
+                        </div>
+                        <div style="display:flex; gap:8px; margin-top:8px;">
+                            <button class="btn-sub-reset" id="btn-bgimg-remove" style="flex:1;">画像を削除</button>
+                        </div>
+                        <p class="setting-note">端末に保存されている画像だけを使います。どこにも送信されません。</p>
+                    </div>
+
+                    <div class="setting-group">
+                        <div class="setting-label"><span>ヘッダーの見た目</span></div>
+                        <div class="toggle-row">
+                            <span class="setting-note" style="font-weight:600; color:var(--text-primary); opacity:1;">ヘッダーの文字色を本文になじませる</span>
+                            <label class="switch">
+                                <input type="checkbox" id="header-match-toggle">
+                                <span class="switch-track"></span>
+                            </label>
+                        </div>
+                        <p class="setting-note">オフのときは白黒の固定色、オンのときは今の文字色に近い色になります。背景色を暗くしたときにヘッダーの文字が埋もれる場合は、オンにしてみてください。</p>
                     </div>
 
                     <div class="setting-group">
@@ -1273,6 +1413,10 @@
             COLOR_LIGHT: 'gh_mochi_color_light',
             COLOR_DARK: 'gh_mochi_color_dark',
             COLOR_PRESETS: 'gh_mochi_color_presets',
+            HEADER_MATCH: 'gh_mochi_header_match',
+            BG_IMAGE_ON: 'gh_mochi_bgimg_on',
+            BG_IMAGE_DATA: 'gh_mochi_bgimg_data',
+            POMO: 'gh_mochi_pomo',
             // 旧バージョンからの移行用
             LEGACY_POS_IDLE: 'gh_mochi_img_idle',
             LEGACY_POS_RIGHT: 'gh_mochi_img_right',
@@ -1348,25 +1492,16 @@
         /* =====================================================
            マスコット本体（アニメーション・ドラッグ・複数セット）
            ===================================================== */
-        const mascotState = {
-            images: { idle: null, right: null, left: null },
-            currentHand: 'right',
-            idleTimer: null,
-            isDragging: false,
-            dragOffset: { x: 0, y: 0 },
-            position: { x: 24, y: 24 }
-        };
+        let mascotCurrentHand = 'right';
+        let mascotIdleTimer = null;
 
         const editor = document.getElementById('editor');
         const editorWrap = document.getElementById('editor-wrap');
+        const mainEl = document.getElementById('app-main');
         const backdrop = document.getElementById('backdrop');
         const measureEl = document.getElementById('measure');
         const charCount = document.getElementById('char-count');
-        const mascotContainer = document.getElementById('mascot-container');
-        const imgIdle = document.getElementById('mascot-idle');
-        const imgRight = document.getElementById('mascot-right');
-        const imgLeft = document.getElementById('mascot-left');
-        const mascotFallback = document.getElementById('mascot-fallback');
+        const mascotLayer = document.getElementById('mascot-layer');
 
         const modalSettings = document.getElementById('modal-settings');
         const btnOpenSettings = document.getElementById('btn-open-settings');
@@ -1392,20 +1527,28 @@
             charCount.textContent = `${editor.value.length.toLocaleString()} 文字`;
         }
 
+        function mascotNodes() { return [...mascotLayer.querySelectorAll('.mascot-container')]; }
+
         function triggerMascotAnimation() {
-            mascotState.currentHand = (mascotState.currentHand === 'right') ? 'left' : 'right';
-            setMascotPose(mascotState.currentHand);
-            mascotContainer.classList.remove('squish-anim');
-            void mascotContainer.offsetWidth;
-            mascotContainer.classList.add('squish-anim');
-            clearTimeout(mascotState.idleTimer);
-            mascotState.idleTimer = setTimeout(() => setMascotPose('idle'), IDLE_TIMEOUT_MS);
+            mascotCurrentHand = (mascotCurrentHand === 'right') ? 'left' : 'right';
+            mascotNodes().forEach(node => {
+                setMascotPose(node, mascotCurrentHand);
+                node.classList.remove('squish-anim');
+                void node.offsetWidth;
+                node.classList.add('squish-anim');
+            });
+            clearTimeout(mascotIdleTimer);
+            mascotIdleTimer = setTimeout(() => mascotNodes().forEach(node => setMascotPose(node, 'idle')), IDLE_TIMEOUT_MS);
         }
 
-        function setMascotPose(pose) {
-            const hasCustom = mascotState.images.idle || mascotState.images.right || mascotState.images.left;
+        function setMascotPose(node, pose) {
+            const imgIdle = node.querySelector('.mascot-img.mi-idle');
+            const imgRight = node.querySelector('.mascot-img.mi-right');
+            const imgLeft = node.querySelector('.mascot-img.mi-left');
+            const fallback = node.querySelector('.mascot-fallback');
+            const hasCustom = imgIdle.getAttribute('src') || imgRight.getAttribute('src') || imgLeft.getAttribute('src');
             if (hasCustom) {
-                mascotFallback.style.display = 'none';
+                fallback.style.display = 'none';
                 imgIdle.classList.toggle('active', pose === 'idle');
                 imgRight.classList.toggle('active', pose === 'right');
                 imgLeft.classList.toggle('active', pose === 'left');
@@ -1413,53 +1556,87 @@
                 imgIdle.classList.remove('active');
                 imgRight.classList.remove('active');
                 imgLeft.classList.remove('active');
-                mascotFallback.style.display = 'flex';
-                mascotFallback.dataset.pose = pose;
+                fallback.style.display = 'flex';
+                fallback.dataset.pose = pose;
             }
         }
 
-        function initDraggableMascot() {
-            const savedPos = storageGet(KEYS.POSITION);
-            if (savedPos) { try { mascotState.position = JSON.parse(savedPos); } catch (e) {} }
-            applyMascotPosition();
+        const MASCOT_TEMPLATE = `
+            <img class="mascot-img mi-idle active" alt="待機中">
+            <img class="mascot-img mi-right" alt="右手打鍵">
+            <img class="mascot-img mi-left" alt="左手打鍵">
+            <div class="mascot-fallback" data-pose="idle" style="display: none;">
+                <svg viewBox="0 0 120 120" role="img" aria-label="ミニキャラ">
+                    <rect class="mc-key" x="20" y="100" width="80" height="9" rx="4.5"></rect>
+                    <path class="mc-body" d="M18 88 C18 52 36 28 60 28 C84 28 102 52 102 88 C102 100 90 104 60 104 C30 104 18 100 18 88 Z"></path>
+                    <path class="mc-shine" d="M34 52 C38 42 46 37 54 36"></path>
+                    <circle class="mc-eye" cx="47" cy="70" r="3.6"></circle>
+                    <circle class="mc-eye" cx="73" cy="70" r="3.6"></circle>
+                    <ellipse class="mc-blush" cx="37" cy="79" rx="6.5" ry="3.8"></ellipse>
+                    <ellipse class="mc-blush" cx="83" cy="79" rx="6.5" ry="3.8"></ellipse>
+                    <path class="mc-mouth" d="M55.5 77 Q60 81.5 64.5 77"></path>
+                    <g class="mc-hand mc-hand-l"><ellipse cx="42" cy="99" rx="9" ry="7"></ellipse></g>
+                    <g class="mc-hand mc-hand-r"><ellipse cx="78" cy="99" rx="9" ry="7"></ellipse></g>
+                </svg>
+            </div>`;
 
-            mascotContainer.addEventListener('pointerdown', (e) => {
-                mascotState.isDragging = true;
-                try { mascotContainer.setPointerCapture(e.pointerId); } catch (err) {}
-                mascotState.dragOffset = { x: e.clientX - mascotState.position.x, y: e.clientY - mascotState.position.y };
+        function makeDraggable(node, set) {
+            let dragging = false, offset = { x: 0, y: 0 };
+            function place(pos) { node.style.left = `${pos.x}px`; node.style.top = `${pos.y}px`; node.style.right = 'auto'; }
+            place(set.pos || { x: 24, y: 24 });
+
+            node.addEventListener('pointerdown', (e) => {
+                dragging = true;
+                try { node.setPointerCapture(e.pointerId); } catch (err) {}
+                const rect = node.getBoundingClientRect();
+                offset = { x: e.clientX - rect.left, y: e.clientY - rect.top };
                 e.preventDefault();
             });
-            mascotContainer.addEventListener('pointermove', (e) => {
-                if (!mascotState.isDragging) return;
-                let newX = e.clientX - mascotState.dragOffset.x;
-                let newY = e.clientY - mascotState.dragOffset.y;
-                newX = Math.max(0, Math.min(newX, window.innerWidth - mascotContainer.offsetWidth));
-                newY = Math.max(0, Math.min(newY, window.innerHeight - mascotContainer.offsetHeight));
-                mascotState.position = { x: newX, y: newY };
-                applyMascotPosition();
+            node.addEventListener('pointermove', (e) => {
+                if (!dragging) return;
+                let newX = e.clientX - offset.x;
+                let newY = e.clientY - offset.y;
+                newX = Math.max(0, Math.min(newX, window.innerWidth - node.offsetWidth));
+                newY = Math.max(0, Math.min(newY, window.innerHeight - node.offsetHeight));
+                place({ x: newX, y: newY });
             });
             const stopDrag = (e) => {
-                if (mascotState.isDragging) {
-                    mascotState.isDragging = false;
-                    try { mascotContainer.releasePointerCapture(e.pointerId); } catch (err) {}
-                    storageSet(KEYS.POSITION, JSON.stringify(mascotState.position));
-                }
+                if (!dragging) return;
+                dragging = false;
+                try { node.releasePointerCapture(e.pointerId); } catch (err) {}
+                const rect = node.getBoundingClientRect();
+                const target = mascotSets.find(s => s.id === set.id);
+                if (target) { target.pos = { x: rect.left, y: rect.top }; saveMascotSets(); }
             };
-            mascotContainer.addEventListener('pointerup', stopDrag);
-            mascotContainer.addEventListener('pointercancel', stopDrag);
+            node.addEventListener('pointerup', stopDrag);
+            node.addEventListener('pointercancel', stopDrag);
+        }
 
-            window.addEventListener('resize', () => {
-                mascotState.position.x = Math.max(0, Math.min(mascotState.position.x, window.innerWidth - mascotContainer.offsetWidth));
-                mascotState.position.y = Math.max(0, Math.min(mascotState.position.y, window.innerHeight - mascotContainer.offsetHeight));
-                applyMascotPosition();
+        function renderMascotLayer() {
+            mascotLayer.innerHTML = '';
+            mascotSets.filter(s => s.visible).forEach(set => {
+                const node = document.createElement('div');
+                node.className = 'mascot-container';
+                node.dataset.setId = set.id;
+                node.innerHTML = MASCOT_TEMPLATE;
+                node.querySelector('.mi-idle').src = set.idle || '';
+                node.querySelector('.mi-right').src = set.right || '';
+                node.querySelector('.mi-left').src = set.left || '';
+                mascotLayer.appendChild(node);
+                setMascotPose(node, 'idle');
+                makeDraggable(node, set);
             });
         }
 
-        function applyMascotPosition() {
-            mascotContainer.style.left = `${mascotState.position.x}px`;
-            mascotContainer.style.top = `${mascotState.position.y}px`;
-            mascotContainer.style.right = 'auto';
-        }
+        window.addEventListener('resize', () => {
+            mascotNodes().forEach(node => {
+                const rect = node.getBoundingClientRect();
+                const newX = Math.max(0, Math.min(rect.left, window.innerWidth - node.offsetWidth));
+                const newY = Math.max(0, Math.min(rect.top, window.innerHeight - node.offsetHeight));
+                node.style.left = `${newX}px`;
+                node.style.top = `${newY}px`;
+            });
+        });
 
         /* ---- 記号ワンタップ入力 ---- */
         function insertSymbol(openSymbol, closeSymbol = '') {
@@ -1604,6 +1781,47 @@
             storageSet(theme === 'dark' ? KEYS.COLOR_DARK : KEYS.COLOR_LIGHT, JSON.stringify({ bg, text }));
         }
 
+        let lastBg = null, lastText = null;
+        let headerMatchEnabled = false;
+
+        function hslToHex(h, s, l) {
+            s /= 100; l /= 100;
+            const c = (1 - Math.abs(2 * l - 1)) * s;
+            const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+            const m = l - c / 2;
+            let r = 0, g = 0, b = 0;
+            if (h < 60) { r = c; g = x; b = 0; }
+            else if (h < 120) { r = x; g = c; b = 0; }
+            else if (h < 180) { r = 0; g = c; b = x; }
+            else if (h < 240) { r = 0; g = x; b = c; }
+            else if (h < 300) { r = x; g = 0; b = c; }
+            else { r = c; g = 0; b = x; }
+            const toHex = v => Math.round((v + m) * 255).toString(16).padStart(2, '0');
+            return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+        }
+
+        function updateThemeColorMeta(bg) {
+            const meta = document.getElementById('meta-theme-color');
+            if (meta) meta.setAttribute('content', hslToHex(bg.h, bg.s, bg.l));
+        }
+
+        function applyHeaderMatch() {
+            const root = document.documentElement;
+            const vars = ['--top-text-primary', '--top-text-secondary', '--top-btn-hover', '--top-btn-hover-text', '--top-btn-bg', '--top-border'];
+            if (headerMatchEnabled && lastText && lastBg) {
+                const t = lastText, bgc = lastBg;
+                const secL = t.l < 50 ? Math.min(100, t.l + 30) : Math.max(0, t.l - 30);
+                root.style.setProperty('--top-text-primary', `hsl(${t.h}, ${t.s}%, ${t.l}%)`);
+                root.style.setProperty('--top-text-secondary', `hsl(${t.h}, ${Math.max(0, t.s - 10)}%, ${secL}%)`);
+                root.style.setProperty('--top-btn-hover', `hsl(${t.h}, ${t.s}%, ${t.l}%)`);
+                root.style.setProperty('--top-btn-hover-text', `hsl(${bgc.h}, ${bgc.s}%, ${bgc.l}%)`);
+                root.style.setProperty('--top-btn-bg', `hsla(${t.h}, ${t.s}%, ${t.l}%, 0.14)`);
+                root.style.setProperty('--top-border', `hsla(${t.h}, ${t.s}%, ${t.l}%, 0.3)`);
+            } else {
+                vars.forEach(v => root.style.removeProperty(v));
+            }
+        }
+
         function applyColors(bg, text) {
             document.getElementById('bg-h-val').textContent = `${bg.h}°`;
             document.getElementById('bg-s-val').textContent = `${bg.s}%`;
@@ -1612,12 +1830,16 @@
             document.getElementById('text-s-val').textContent = `${text.s}%`;
             document.getElementById('text-l-val').textContent = `${text.l}%`;
 
+            lastBg = bg; lastText = text;
+
             const root = document.documentElement;
             root.style.setProperty('--bg-gradient-1', `hsl(${bg.h}, ${bg.s}%, ${bg.l}%)`);
             root.style.setProperty('--bg-gradient-2', `hsl(${(bg.h + 15) % 360}, ${bg.s}%, ${Math.max(0, bg.l - 4)}%)`);
             root.style.setProperty('--text-primary', `hsl(${text.h}, ${text.s}%, ${text.l}%)`);
             root.style.setProperty('--text-secondary', `hsl(${text.h}, ${Math.max(0, text.s - 10)}%, ${Math.min(100, text.l + 25)}%)`);
             root.style.setProperty('--caret-color', `hsla(${text.h}, ${text.s}%, ${text.l}%, 0.55)`);
+            updateThemeColorMeta(bg);
+            applyHeaderMatch();
         }
 
         function initColorSettings() {
@@ -1777,10 +1999,91 @@
             const paperToggle = document.getElementById('paper-toggle');
             const paperOn = storageGet(KEYS.PAPER) === '1';
             paperToggle.checked = paperOn;
-            editorWrap.classList.toggle('paper-on', paperOn);
+            mainEl.classList.toggle('paper-on', paperOn);
             paperToggle.addEventListener('change', () => {
-                editorWrap.classList.toggle('paper-on', paperToggle.checked);
+                mainEl.classList.toggle('paper-on', paperToggle.checked);
                 storageSet(KEYS.PAPER, paperToggle.checked ? '1' : '0');
+            });
+
+            initHeaderMatch();
+            initBackgroundImage();
+        }
+
+        function initHeaderMatch() {
+            const toggle = document.getElementById('header-match-toggle');
+            headerMatchEnabled = storageGet(KEYS.HEADER_MATCH) === '1';
+            toggle.checked = headerMatchEnabled;
+            applyHeaderMatch();
+            toggle.addEventListener('change', () => {
+                headerMatchEnabled = toggle.checked;
+                storageSet(KEYS.HEADER_MATCH, headerMatchEnabled ? '1' : '0');
+                applyHeaderMatch();
+            });
+        }
+
+        const MAX_BG_IMAGE_DIM = 1600;
+
+        function applyBackgroundImage() {
+            const layer = document.getElementById('bg-image-layer');
+            const on = storageGet(KEYS.BG_IMAGE_ON) === '1';
+            const data = storageGet(KEYS.BG_IMAGE_DATA);
+            layer.style.backgroundImage = (on && data) ? `url(${data})` : 'none';
+        }
+
+        function initBackgroundImage() {
+            const toggle = document.getElementById('bgimg-toggle');
+            const input = document.getElementById('bgimg-input');
+            const filenameEl = document.getElementById('bgimg-filename');
+            const removeBtn = document.getElementById('btn-bgimg-remove');
+
+            toggle.checked = storageGet(KEYS.BG_IMAGE_ON) === '1';
+            filenameEl.textContent = storageGet(KEYS.BG_IMAGE_DATA) ? '設定済みの画像を使用中' : '画像を選択...';
+            applyBackgroundImage();
+
+            toggle.addEventListener('change', () => {
+                if (toggle.checked && !storageGet(KEYS.BG_IMAGE_DATA)) {
+                    showToast('先に画像を選択してください');
+                    toggle.checked = false;
+                    return;
+                }
+                storageSet(KEYS.BG_IMAGE_ON, toggle.checked ? '1' : '0');
+                applyBackgroundImage();
+            });
+
+            input.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        let w = img.width, h = img.height;
+                        if (w > h && w > MAX_BG_IMAGE_DIM) { h = Math.round(h * MAX_BG_IMAGE_DIM / w); w = MAX_BG_IMAGE_DIM; }
+                        else if (h > MAX_BG_IMAGE_DIM) { w = Math.round(w * MAX_BG_IMAGE_DIM / h); h = MAX_BG_IMAGE_DIM; }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w; canvas.height = h;
+                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+                        storageSet(KEYS.BG_IMAGE_DATA, dataUrl);
+                        storageSet(KEYS.BG_IMAGE_ON, '1');
+                        toggle.checked = true;
+                        filenameEl.textContent = '設定済みの画像を使用中';
+                        applyBackgroundImage();
+                        showToast('背景画像を設定しました');
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+                e.target.value = '';
+            });
+
+            removeBtn.addEventListener('click', () => {
+                storageRemove(KEYS.BG_IMAGE_DATA);
+                storageSet(KEYS.BG_IMAGE_ON, '0');
+                toggle.checked = false;
+                filenameEl.textContent = '画像を選択...';
+                applyBackgroundImage();
+                showToast('背景画像を削除しました');
             });
         }
 
@@ -1921,7 +2224,7 @@
             });
         }
 
-        function finishSpeech() { setTtsUI(false); setMascotPose('idle'); }
+        function finishSpeech() { setTtsUI(false); mascotNodes().forEach(node => setMascotPose(node, 'idle')); }
         function stopSpeech() { ttsState.session++; if (TTS_SUPPORTED) speechSynthesis.cancel(); finishSpeech(); }
 
         /* =====================================================
@@ -2303,68 +2606,98 @@
         }
 
         /* =====================================================
-           キャラクターセット（複数セット・横並びスロット）
+           キャラクターセット（複数セット・同時に複数人表示）
            ===================================================== */
         let mascotSets = [];
-        let mascotActive = 0;
+        let mascotEditingId = null;
 
         function migrateLegacyMascot() {
             if (storageGet(KEYS.MASCOT_SETS)) return;
             const idle = storageGet(KEYS.LEGACY_POS_IDLE);
             const right = storageGet(KEYS.LEGACY_POS_RIGHT);
             const left = storageGet(KEYS.LEGACY_POS_LEFT);
-            const set = { name: 'セット1', idle: idle || null, right: right || null, left: left || null };
+            let pos = { x: 24, y: 24 };
+            const savedPos = storageGetJSON(KEYS.POSITION, null);
+            if (savedPos) pos = savedPos;
+            const set = { id: uid(), name: 'セット1', idle: idle || null, right: right || null, left: left || null, visible: true, pos };
             storageSet(KEYS.MASCOT_SETS, JSON.stringify([set]));
         }
 
         function loadMascotSets() {
             migrateLegacyMascot();
             const saved = storageGetJSON(KEYS.MASCOT_SETS, null);
-            mascotSets = Array.isArray(saved) && saved.length ? saved : [{ name: 'セット1', idle: null, right: null, left: null }];
-            mascotActive = parseInt(storageGet(KEYS.MASCOT_ACTIVE, '0'), 10) || 0;
-            if (mascotActive >= mascotSets.length) mascotActive = 0;
+            mascotSets = Array.isArray(saved) && saved.length ? saved : [];
+            if (mascotSets.length === 0) {
+                mascotSets = [{ id: uid(), name: 'セット1', idle: null, right: null, left: null, visible: true, pos: { x: 24, y: 24 } }];
+            }
+            // 旧データの補完（id・visible・pos が無い場合）
+            let needsSave = false;
+            mascotSets.forEach((s, i) => {
+                if (!s.id) { s.id = uid(); needsSave = true; }
+                if (typeof s.visible !== 'boolean') { s.visible = i === 0; needsSave = true; }
+                if (!s.pos) { s.pos = { x: 24 + i * 30, y: 24 + i * 30 }; needsSave = true; }
+            });
+            mascotEditingId = mascotSets[0].id;
+            if (needsSave) saveMascotSets();
         }
-        function saveMascotSets() {
-            storageSet(KEYS.MASCOT_SETS, JSON.stringify(mascotSets));
-            storageSet(KEYS.MASCOT_ACTIVE, String(mascotActive));
-        }
-
-        function applyActiveMascotSet() {
-            const set = mascotSets[mascotActive] || { idle: null, right: null, left: null };
-            mascotState.images = { idle: set.idle || null, right: set.right || null, left: set.left || null };
-            imgIdle.src = set.idle || '';
-            imgRight.src = set.right || '';
-            imgLeft.src = set.left || '';
-            setMascotPose('idle');
-            renderMascotSlots(set);
-        }
+        function saveMascotSets() { storageSet(KEYS.MASCOT_SETS, JSON.stringify(mascotSets)); }
 
         function renderMascotSetTabs() {
             const wrap = document.getElementById('set-tabs');
-            wrap.innerHTML = mascotSets.map((s, i) =>
-                `<button class="set-tab ${i === mascotActive ? 'active' : ''}" data-idx="${i}">${escapeHtml(s.name)}</button>`
-            ).join('') + `<button class="set-tab add-set" id="btn-add-set">＋ セット追加</button>`;
+            wrap.innerHTML = mascotSets.map(s => `
+                <div class="mascot-set-row${s.id === mascotEditingId ? ' editing' : ''}" data-id="${s.id}">
+                    <label class="switch small" title="画面に表示">
+                        <input type="checkbox" data-role="visible" ${s.visible ? 'checked' : ''}>
+                        <span class="switch-track"></span>
+                    </label>
+                    <button class="set-name-btn" data-role="edit">${escapeHtml(s.name)}</button>
+                    <button class="se-mini-btn" data-role="rename" aria-label="名前を変更">✎</button>
+                    <button class="se-mini-btn danger" data-role="del" aria-label="削除">✕</button>
+                </div>`).join('') + `<button class="btn-sub-reset" id="btn-add-set" style="margin-top:6px; width:100%;">＋ セット追加</button>`;
 
-            wrap.querySelectorAll('.set-tab[data-idx]').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    mascotActive = parseInt(btn.dataset.idx, 10);
+            wrap.querySelectorAll('.mascot-set-row').forEach(row => {
+                const id = row.dataset.id;
+                const set = mascotSets.find(s => s.id === id);
+                row.querySelector('[data-role="visible"]').addEventListener('change', (e) => {
+                    set.visible = e.target.checked;
+                    saveMascotSets();
+                    renderMascotLayer();
+                });
+                row.querySelector('[data-role="edit"]').addEventListener('click', () => {
+                    mascotEditingId = id;
+                    renderMascotSetTabs();
+                    renderMascotSlots();
+                });
+                row.querySelector('[data-role="rename"]').addEventListener('click', () => {
+                    const name = prompt('セットの名前', set.name);
+                    if (name && name.trim()) { set.name = name.trim().slice(0, 12); saveMascotSets(); renderMascotSetTabs(); }
+                });
+                row.querySelector('[data-role="del"]').addEventListener('click', () => {
+                    if (mascotSets.length <= 1) { showToast('最後のセットは削除できません'); return; }
+                    if (!confirm(`「${set.name}」を削除しますか？`)) return;
+                    mascotSets = mascotSets.filter(s => s.id !== id);
+                    if (mascotEditingId === id) mascotEditingId = mascotSets[0].id;
                     saveMascotSets();
                     renderMascotSetTabs();
-                    applyActiveMascotSet();
+                    renderMascotSlots();
+                    renderMascotLayer();
                 });
             });
+
             document.getElementById('btn-add-set').addEventListener('click', () => {
                 const n = mascotSets.length + 1;
-                mascotSets.push({ name: `セット${n}`, idle: null, right: null, left: null });
-                mascotActive = mascotSets.length - 1;
+                const newSet = { id: uid(), name: `セット${n}`, idle: null, right: null, left: null, visible: false, pos: { x: 24 + n * 20, y: 24 + n * 20 } };
+                mascotSets.push(newSet);
+                mascotEditingId = newSet.id;
                 saveMascotSets();
                 renderMascotSetTabs();
-                applyActiveMascotSet();
+                renderMascotSlots();
             });
         }
 
-        function renderMascotSlots(set) {
-            [['idle', '待機'], ['right', '右手'], ['left', '左手']].forEach(([key, label]) => {
+        function renderMascotSlots() {
+            const set = mascotSets.find(s => s.id === mascotEditingId) || mascotSets[0];
+            [['idle', '待機'], ['right', '右手'], ['left', '左手']].forEach(([key]) => {
                 const img = document.getElementById(`slot-${key}-img`);
                 const slot = document.getElementById(`slot-${key}`);
                 const has = !!set[key];
@@ -2377,7 +2710,8 @@
         function initMascotSets() {
             loadMascotSets();
             renderMascotSetTabs();
-            applyActiveMascotSet();
+            renderMascotSlots();
+            renderMascotLayer();
 
             [['idle', 'input-idle'], ['right', 'input-right'], ['left', 'input-left']].forEach(([key, inputId]) => {
                 document.getElementById(inputId).addEventListener('change', (e) => {
@@ -2394,9 +2728,11 @@
                             canvas.width = w; canvas.height = h;
                             canvas.getContext('2d').drawImage(img, 0, 0, w, h);
                             const compressedData = canvas.toDataURL('image/png', 0.85);
-                            mascotSets[mascotActive][key] = compressedData;
+                            const set = mascotSets.find(s => s.id === mascotEditingId);
+                            set[key] = compressedData;
                             saveMascotSets();
-                            applyActiveMascotSet();
+                            renderMascotSlots();
+                            renderMascotLayer();
                             showToast('画像を保存しました');
                         };
                         img.src = event.target.result;
@@ -2404,26 +2740,6 @@
                     reader.readAsDataURL(file);
                     e.target.value = '';
                 });
-            });
-
-            document.getElementById('btn-rename-set').addEventListener('click', () => {
-                const cur = mascotSets[mascotActive];
-                const name = prompt('セットの名前', cur.name);
-                if (name && name.trim()) {
-                    cur.name = name.trim().slice(0, 12);
-                    saveMascotSets();
-                    renderMascotSetTabs();
-                }
-            });
-
-            document.getElementById('btn-delete-set').addEventListener('click', () => {
-                if (mascotSets.length <= 1) { showToast('最後のセットは削除できません'); return; }
-                if (!confirm(`「${mascotSets[mascotActive].name}」を削除しますか？`)) return;
-                mascotSets.splice(mascotActive, 1);
-                mascotActive = Math.max(0, mascotActive - 1);
-                saveMascotSets();
-                renderMascotSetTabs();
-                applyActiveMascotSet();
             });
         }
 
@@ -2455,6 +2771,108 @@
                     e.preventDefault();
                 });
             });
+        }
+
+        /* =====================================================
+           ポモドーロタイマー
+           ===================================================== */
+        const pomoState = { workMin: 25, breakMin: 5, phase: 'work', remaining: 25 * 60, running: false, timerId: null };
+
+        function pomoFormat(sec) {
+            const m = Math.floor(sec / 60), s = sec % 60;
+            return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
+        function pomoUpdateDisplay() {
+            const total = (pomoState.phase === 'work' ? pomoState.workMin : pomoState.breakMin) * 60;
+            const pct = total > 0 ? Math.round(((total - pomoState.remaining) / total) * 100) : 0;
+            document.documentElement.style.setProperty('--pomo-pct', String(pct));
+            document.getElementById('pomo-time').textContent = pomoFormat(pomoState.remaining);
+            document.getElementById('pomo-phase').textContent = pomoState.phase === 'work' ? '作業' : '休憩';
+            document.getElementById('pomo-startpause').textContent = pomoState.running ? '一時停止' : (pomoState.remaining < total ? '再開' : '開始');
+            const btn = document.getElementById('btn-pomo');
+            btn.classList.toggle('running', pomoState.running);
+            btn.classList.toggle('on-break', pomoState.phase === 'break');
+            btn.title = `ポモドーロタイマー（${pomoState.phase === 'work' ? '作業' : '休憩'} 残り ${pomoFormat(pomoState.remaining)}）`;
+        }
+
+        function pomoTick() {
+            pomoState.remaining--;
+            if (pomoState.remaining <= 0) {
+                const wasWork = pomoState.phase === 'work';
+                pomoState.phase = wasWork ? 'break' : 'work';
+                pomoState.remaining = (pomoState.phase === 'work' ? pomoState.workMin : pomoState.breakMin) * 60;
+                showToast(wasWork ? '休憩の時間です' : '作業を始めましょう');
+            }
+            pomoUpdateDisplay();
+        }
+
+        function pomoStart() {
+            if (pomoState.running) return;
+            pomoState.running = true;
+            pomoState.timerId = setInterval(pomoTick, 1000);
+            pomoUpdateDisplay();
+        }
+        function pomoPause() {
+            pomoState.running = false;
+            clearInterval(pomoState.timerId);
+            pomoUpdateDisplay();
+        }
+        function pomoReset() {
+            pomoPause();
+            pomoState.phase = 'work';
+            pomoState.remaining = pomoState.workMin * 60;
+            pomoUpdateDisplay();
+        }
+
+        function initPomodoro() {
+            const saved = storageGetJSON(KEYS.POMO, {});
+            pomoState.workMin = saved.workMin || 25;
+            pomoState.breakMin = saved.breakMin || 5;
+            pomoState.remaining = pomoState.workMin * 60;
+
+            const panel = document.getElementById('pomo-panel');
+            const btn = document.getElementById('btn-pomo');
+            const workInput = document.getElementById('pomo-work-min');
+            const breakInput = document.getElementById('pomo-break-min');
+            workInput.value = pomoState.workMin;
+            breakInput.value = pomoState.breakMin;
+
+            function savePomoMinutes() {
+                storageSet(KEYS.POMO, JSON.stringify({ workMin: pomoState.workMin, breakMin: pomoState.breakMin }));
+            }
+
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                panel.classList.toggle('open');
+            });
+            document.addEventListener('click', (e) => {
+                if (panel.classList.contains('open') && !panel.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+                    panel.classList.remove('open');
+                }
+            });
+
+            document.getElementById('pomo-startpause').addEventListener('click', () => {
+                pomoState.running ? pomoPause() : pomoStart();
+            });
+            document.getElementById('pomo-reset').addEventListener('click', pomoReset);
+
+            workInput.addEventListener('change', () => {
+                const v = Math.max(1, Math.min(120, parseInt(workInput.value, 10) || 25));
+                workInput.value = v;
+                pomoState.workMin = v;
+                savePomoMinutes();
+                if (!pomoState.running && pomoState.phase === 'work') { pomoState.remaining = v * 60; pomoUpdateDisplay(); }
+            });
+            breakInput.addEventListener('change', () => {
+                const v = Math.max(1, Math.min(60, parseInt(breakInput.value, 10) || 5));
+                breakInput.value = v;
+                pomoState.breakMin = v;
+                savePomoMinutes();
+                if (!pomoState.running && pomoState.phase === 'break') { pomoState.remaining = v * 60; pomoUpdateDisplay(); }
+            });
+
+            pomoUpdateDisplay();
         }
 
         function initUI() {
@@ -2493,7 +2911,6 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             initEditor();
-            initDraggableMascot();
             initSymbolEditor();
             initColorSettings();
             initEditorSettings();
@@ -2501,6 +2918,7 @@
             initUI();
             initTTS();
             initChecks();
+            initPomodoro();
         });
     </script>
 </body>
